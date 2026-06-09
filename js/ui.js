@@ -42,6 +42,8 @@ const UI = {
   /**
    * Bind to DOM elements. Call once after the DOM is ready.
    */
+  _knowledgeKeys: null,  // Set of seen triggers to prevent duplicates
+
   init: function () {
     this.missionEl       = document.getElementById('mission-content');
     this.mentorEl        = document.getElementById('mentor-chat');
@@ -51,6 +53,7 @@ const UI = {
     this.levelCompleteEl = document.getElementById('level-complete');
     this.badgeOverlayEl  = document.getElementById('badge-overlay');
     this.gameUiEl        = document.getElementById('game-ui');
+    this._knowledgeKeys  = {};
   },
 
   // ---------------------------------------------------------------------------
@@ -191,30 +194,34 @@ const UI = {
   // ---------------------------------------------------------------------------
 
   /**
-   * Replace the knowledge card content with a new term and definition.
+   * Append a new knowledge card. Skips if this trigger has already been seen.
+   * Knowledge cards accumulate forever \u2014 never cleared between levels.
    *
    * @param {string} text    The definition text
    * @param {string} trigger The term / trigger word
    */
   showKnowledge: function (text, trigger) {
     if (!this.knowledgeEl) return;
+    if (!this._knowledgeKeys) this._knowledgeKeys = {};
 
-    this.knowledgeEl.innerHTML =
-      '<div class="knowledge-card">' +
-        '<div class="knowledge-term">' + this._escapeHtml(trigger) + '</div>' +
-        '<div class="knowledge-def">' + this._escapeHtml(text) + '</div>' +
-      '</div>';
+    // Skip duplicates
+    var key = trigger.toLowerCase();
+    if (this._knowledgeKeys[key]) return;
+    this._knowledgeKeys[key] = true;
+
+    var card = document.createElement('div');
+    card.className = 'knowledge-card';
+    card.innerHTML =
+      '<div class="knowledge-term">' + this._escapeHtml(trigger) + '</div>' +
+      '<div class="knowledge-def">' + this._escapeHtml(text) + '</div>';
+
+    // Insert at top so newest appears first
+    this.knowledgeEl.insertBefore(card, this.knowledgeEl.firstChild);
   },
 
-  /** Reset knowledge card to the default "ready" state. */
+  /** Knowledge is permanent \u2014 this is now a no-op. */
   clearKnowledge: function () {
-    if (!this.knowledgeEl) return;
-
-    this.knowledgeEl.innerHTML =
-      '<div class="knowledge-card">' +
-        '<div class="knowledge-term">\u51c6\u5907\u5c31\u7eea</div>' +
-        '<div class="knowledge-def">\u5b8c\u6210\u4efb\u52a1\u89e3\u9501\u77e5\u8bc6\u70b9</div>' +
-      '</div>';
+    // Intentionally empty: knowledge cards persist across all levels
   },
 
   // ---------------------------------------------------------------------------

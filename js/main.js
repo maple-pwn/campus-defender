@@ -44,6 +44,9 @@ const Game = {
     document.getElementById('badge-ok-btn').onclick = function () { UI.hideBadge(); };
 
 
+    // Seed permanent knowledge: keyboard shortcuts hint
+    UI.showKnowledge('⬆⬇ 方向键可以切换历史命令，Tab 键自动补全命令名。任何时候都可以用这些快捷操作。', '⌨ 终端快捷操作');
+
     // Show title screen (continue button enabled if save exists)
     UI.showTitleScreen(GameState.hasSave());
   },
@@ -112,7 +115,6 @@ const Game = {
       panelTitle.textContent = chData.name + ' — ' + data.title;
     }
     Terminal.printSystem('═══ ' + chData.name + ' — ' + data.title + ' ═══');
-    Terminal.printHint('💡 ⬆⬇ 方向键切换历史命令 · Tab 自动补全');
     Terminal.printInfo(data.story);
 
     // Show first mentor message (trigger === 'start')
