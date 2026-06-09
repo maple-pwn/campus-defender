@@ -133,7 +133,7 @@ const UI = {
 
     var nameSpan = document.createElement('span');
     nameSpan.className = 'mentor-name';
-    nameSpan.textContent = isPlayer ? '\u4f60' : '\u5f20\u5b66\u957f';  // 你 / 张学长
+    nameSpan.textContent = isPlayer ? '\u4f60' : '\u53e4\u5fb7\u91cc\u5b89\u6559\u6388';  // 你 / 古德里安教授
 
     var textSpan = document.createElement('span');
     textSpan.className = 'mentor-text';

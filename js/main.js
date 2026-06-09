@@ -356,7 +356,7 @@ const Game = {
 
     // Check if game is fully complete
     if (!level.nextLevel) {
-      Terminal.printSystem('🎉 恭喜你完成所有关卡！你已成为合格的卡塞尔安全卫士！');
+      Terminal.printSystem('🎉 恭喜你完成所有关卡！你已成为合格的卡塞尔之盾！');
       Terminal.printSystem('输入 freemode 或 levels 进入自由模式，可以重新挑战任何已通关关卡');
     }
   },

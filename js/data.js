@@ -73,7 +73,7 @@ const LEVELS = {
     target: null,
     expectedCommands: ['help', 'scan', 'connect'],
     mentorMessages: [
-      { trigger: 'start', text: '嘿，新来的！我是张学长，CTF社的。网络安全的第一步叫"侦察"——搜集目标信息。终端里输入 help 看看你手头有哪些工具。' },
+      { trigger: 'start', text: '嘿，新来的！我是古德里安教授，CTF社的。网络安全的第一步叫"侦察"——搜集目标信息。终端里输入 help 看看你手头有哪些工具。' },
       { trigger: 'cmd:help', text: 'help 列出了所有可用命令。现在试试 scan teach.cassel.edu ——这就像用望远镜观察一栋大楼有几个入口。端口就是"门"，不同门通向不同服务。' },
       { trigger: 'cmd:scan', text: '看到3个开放端口了！22是SSH管理员通道，80是网站入口，3306通向数据库。现在用 connect teach.cassel.edu 80 亲自敲敲Web服务的大门，看看它怎么响应。' },
       { trigger: 'cmd:connect', text: '连接成功！你看，nginx 1.18 就是Web服务器在"自报家门"——告诉所有来访者自己叫什么、什么版本。这就叫 banner 信息。攻击者会收集这些版本来查找已知漏洞。侦察完成！' },
