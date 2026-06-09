@@ -43,19 +43,6 @@ const Game = {
     document.getElementById('next-level-btn').onclick = function () { Game.loadNextLevel(); };
     document.getElementById('badge-ok-btn').onclick = function () { UI.hideBadge(); };
 
-    // Global Enter key handler for overlay dismissal (capture phase beats terminal input)
-    document.addEventListener('keydown', function (e) {
-      if (e.key !== 'Enter') return;
-      var levelComplete = document.getElementById('level-complete');
-      var badgeOverlay = document.getElementById('badge-overlay');
-      if (levelComplete && !levelComplete.classList.contains('hidden')) {
-        e.stopImmediatePropagation();
-        document.getElementById('next-level-btn').click();
-      } else if (badgeOverlay && !badgeOverlay.classList.contains('hidden')) {
-        e.stopImmediatePropagation();
-        document.getElementById('badge-ok-btn').click();
-      }
-    }, true); // capture phase — fires before terminal input handler
 
     // Show title screen (continue button enabled if save exists)
     UI.showTitleScreen(GameState.hasSave());
@@ -119,8 +106,13 @@ const Game = {
 
     Terminal.updateCommandBar(GameState._data.unlockedCommands);
     UI.setMission(data);
+    // Show level title in the panel header + terminal output
+    var panelTitle = document.querySelector('#terminal-panel .panel-title');
+    if (panelTitle) {
+      panelTitle.textContent = chData.name + ' — ' + data.title;
+    }
     Terminal.printSystem('═══ ' + chData.name + ' — ' + data.title + ' ═══');
-    Terminal.printInfo('💡 ⬆⬇ 方向键切换历史命令 · Tab 自动补全');
+    Terminal.printHint('💡 ⬆⬇ 方向键切换历史命令 · Tab 自动补全');
     Terminal.printInfo(data.story);
 
     // Show first mentor message (trigger === 'start')

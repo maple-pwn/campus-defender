@@ -488,6 +488,20 @@ html, body {
   color: var(--color-info);
 }
 
+.terminal-hint {
+  color: var(--badge-color);
+  text-shadow: 0 0 6px var(--badge-glow);
+}
+
+.terminal-title {
+  color: var(--accent);
+  text-shadow: 0 0 10px var(--accent-glow);
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  padding: 4px 0;
+}
+
 /* Terminal Input Line */
 .terminal-input-line {
   display: flex;

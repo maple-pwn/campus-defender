@@ -110,6 +110,11 @@ const Terminal = {
     this.print(text, 'terminal-line terminal-info');
   },
 
+  /** Print a hint line (gold — more visible). */
+  printHint: function (text) {
+    this.print(text, 'terminal-line terminal-hint');
+  },
+
   /**
    * Clear all terminal output.
    */
@@ -333,6 +338,26 @@ const Terminal = {
     var input = this.getInput().trim();
 
     // Enter key sound
+
+    // If overlays are visible, dismiss them instead of processing command
+    var levelComplete = document.getElementById('level-complete');
+    var badgeOverlay = document.getElementById('badge-overlay');
+    if (levelComplete && !levelComplete.classList.contains('hidden')) {
+      document.getElementById('next-level-btn').click();
+      return;
+    }
+    if (badgeOverlay && !badgeOverlay.classList.contains('hidden')) {
+      document.getElementById('badge-ok-btn').click();
+      return;
+    }
+
+    // Empty input: trigger continue button if visible (handled by main.js)
+    if (!input) {
+      if (typeof this._onSubmitCallback === 'function') {
+        this._onSubmitCallback('');
+      }
+      return;
+    }
     if (typeof AudioFX !== 'undefined') AudioFX.play('enter');
 
     // Save to command history
