@@ -200,7 +200,7 @@ var CommandRegistry = {
         } else if (objId.indexOf('scan_') === 0 && args.length >= 1) {
           var targetStr = args[0].toLowerCase();
           // Try matching objective from target keywords
-          // e.g., scan dorm.school.cn → target has "dorm" → match scan_dorm
+          // e.g., scan dorm.cassel.edu → target has "dorm" → match scan_dorm
           if (objId === 'scan_' + targetStr) {
             matched = true;
           } else if (objId.indexOf('scan_') >= 0) {
