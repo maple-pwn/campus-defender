@@ -915,12 +915,22 @@ var CommandRegistry = {
       }
     }
 
+    // Suggested follow-up command — auto-populates a button in the command bar
+    var suggestedCmd = null;
+    if (levelData && levelData.suggestedCommands) {
+      var cmdTrigger = 'cmd:' + commandName;
+      if (levelData.suggestedCommands[cmdTrigger]) {
+        suggestedCmd = levelData.suggestedCommands[cmdTrigger];
+      }
+    }
+
     return {
       output:         output,
       knowledgeCard:  knowledgeCard || null,
       mentorTrigger:  mentorTrigger,
       objectivesMet:  objectivesMet,
       levelComplete:  false,
+      suggestedCmd:   suggestedCmd,
     };
   },
 

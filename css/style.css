@@ -488,6 +488,11 @@ html, body {
   color: var(--color-info);
 }
 
+.terminal-command {
+  color: var(--accent);
+  font-weight: bold;
+}
+
 .terminal-hint {
   color: var(--badge-color);
   text-shadow: 0 0 6px var(--badge-glow);
@@ -580,9 +585,26 @@ html, body {
   box-shadow: 0 0 12px var(--continue-glow) !important;
 }
 
+.suggested {
+  border-color: var(--color-info) !important;
+  color: var(--color-info) !important;
+  animation: pulse-suggest 2s ease-in-out infinite;
+}
+
+.suggested:hover {
+  background: var(--section-mentor-bubble) !important;
+  border-color: var(--section-mentor-text) !important;
+  box-shadow: 0 0 10px rgba(0, 170, 170, 0.25) !important;
+}
+
 @keyframes pulse-continue {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.6; }
+}
+
+@keyframes pulse-suggest {
+  0%, 100% { opacity: 1; border-color: var(--color-info); }
+  50% { opacity: 0.7; border-color: var(--section-mentor-text); }
 }
 
 /* ---------- Assistant Panel (Right 40%) ---------- */

@@ -501,27 +501,32 @@ const LEVELS = {
     objectives: [
       { id: 'scan', description: '扫描靶机: scan ultimate.ctf.cassel.edu' },
       { id: 'connect_8080', description: '连接 Tomcat 管理后台 (8080) 分析服务' },
-      { id: 'exploit', description: '利用 Tomcat 漏洞: exploit ultimate.ctf.cassel.edu tomcat-manager' },
-      { id: 'crack', description: '破解提取的密码哈希: crack <hash> brute' },
+      { id: 'exploit_login', description: '用默认凭据登录 Tomcat: exploit ultimate.ctf.cassel.edu brute-login' },
+      { id: 'exploit_extract', description: '进一步提取哈希文件: exploit ultimate.ctf.cassel.edu tomcat-manager' },
+      { id: 'crack', description: '破解密码哈希（点击下方 💡 按钮自动填入）' },
       { id: 'inspect_flag', description: '查找 flag 文件: inspect /flag.txt' },
       { id: 'report', description: '输入 report 提交最终报告' },
     ],
     target: 'ultimate.ctf.cassel.edu',
     expectedCommands: ['scan', 'connect', 'exploit', 'crack', 'inspect'],
+    suggestedCommands: {
+      'cmd:exploit': 'crack $2y$10$D3f4u1tP4s5w0rDHa5hF0eN0tS0s3cUr3P4s5w0rD brute',
+    },
     mentorMessages: [
-      { trigger: 'start', text: '最终决战！这是对你所有技能的综合考验。没有提示，自己思考攻击链——从侦察到拿到 flag。每步操作如果连续3次没有进展，我会给你提示。祝你好运！' },
-      { trigger: 'timeout', text: '想想完整的攻击链：scan → 找到薄弱端口 → connect 确认 → exploit 突破 → crack 破解密码 → inspect 找 flag → report。' },
+      { trigger: 'start', text: '最终决战！攻击链环环相扣——每一步都建立在前一步的成果上。每步操作如果连续3次没有进展，我会给你提示。祝你好运！' },
+      { trigger: 'timeout', text: '攻击链：scan → connect → exploit 登录 → exploit 提取哈希 → crack（点💡按钮） → inspect → report。' },
     ],
     hints: [
       '第一步永远是侦察：scan ultimate.ctf.cassel.edu',
-      '8080端口是Tomcat管理后台——通常是最薄弱的入口。用 connect ultimate.ctf.cassel.edu 8080 确认服务信息',
-      'Tomcat 9.0 存在已知的默认密码漏洞。试试 exploit ultimate.ctf.cassel.edu tomcat-manager',
-      '拿到哈希了！用 crack 破解它: crack $2y$10$D3f4u1tP4s5w0rDHa5hF0eN0tS0s3cUr3P4s5w0rD brute',
+      '8080端口是Tomcat管理后台。用 connect ultimate.ctf.cassel.edu 8080 确认服务信息',
+      '还记得 ch2-1 的联动吗？先用默认凭据登录！exploit ultimate.ctf.cassel.edu brute-login',
+      '登录成功！进一步渗透：exploit ultimate.ctf.cassel.edu tomcat-manager 提取隐藏的哈希文件',
+      '哈希拿到了！点击命令栏右边 💡 按钮自动填入 crack 命令，不用手输那一长串哈希',
       '密码到手了！最后一个目标：inspect /flag.txt',
       '所有目标完成！输入 report 提交最终报告',
     ],
     knowledgeCards: [
-      { trigger: 'cmd:scan', text: '完整的攻击链：侦察(scan) → 扫描(connect) → 漏洞利用(exploit) → 密码破解(crack) → 数据提取(inspect)。记住这个流程！' },
+      { trigger: 'cmd:scan', text: '完整攻击链：侦察→扫描→登录→漏洞利用→密码破解→数据提取。真实渗透中，每一步的成果都可能成为下一步的钥匙。' },
       { trigger: 'cmd:exploit', text: 'Tomcat Manager默认密码漏洞是最常见的企业安全漏洞之一。永远记得修改默认凭证、删除示例应用、限制管理后台访问IP。' },
     ],
     scanResults: {
@@ -542,7 +547,8 @@ const LEVELS = {
       'ultimate.ctf.cassel.edu:80': '<!DOCTYPE html>\n<html>\n<body>\n  <h1>UltraSecure Corp</h1>\n  <p>我们致力于提供最安全的解决方案。</p>\n  <!-- 员工入口: http://ultimate.ctf.cassel.edu:8080 -->\n</body>\n</html>',
     },
     exploitResults: {
-      'ultimate.ctf.cassel.edu:tomcat-manager': '成功利用 Tomcat Manager 默认密码漏洞！\n\n已获取后台管理权限。在 /backup 目录下发现哈希文件:\nadmin:$2y$10$D3f4u1tP4s5w0rDHa5hF0eN0tS0s3cUr3P4s5w0rD\n\n将此哈希用于 crack 命令进行破解。',
+      'ultimate.ctf.cassel.edu:brute-login': '🔑 登录成功！\n\n使用 Tomcat 默认凭据 admin / admin 成功登录管理后台。\n\n管理面板功能：\n  • 应用管理 — 部署/卸载 WAR 包\n  • 服务器状态 — 查看 JVM 内存和线程\n  • 备份管理 — /backup 目录下似乎有东西\n\n💡 登录只是第一步。现在进一步渗透：exploit ultimate.ctf.cassel.edu tomcat-manager',
+      'ultimate.ctf.cassel.edu:tomcat-manager': '🔍 已进入后台备份目录！\n\n在 /backup 目录下发现哈希文件:\nadmin:$2y$10$D3f4u1tP4s5w0rDHa5hF0eN0tS0s3cUr3P4s5w0rD\n\n👇 点击命令栏右侧 💡 按钮自动填入 crack 命令，不用手输！',
     },
     crackResults: {
       '$2y$10$D3f4u1tP4s5w0rDHa5hF0eN0tS0s3cUr3P4s5w0rD:brute': { password: 'admin123!', time: '12.3 秒' },

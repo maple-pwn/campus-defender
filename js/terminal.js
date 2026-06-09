@@ -271,6 +271,30 @@ const Terminal = {
     });
   },
 
+  /**
+   * Show a single prominent suggested-command button.
+   * Clicking fills the terminal input and focuses it.
+   * @param {string} cmd  Full command string, e.g. "crack abc123 brute"
+   */
+  showSuggestedCommand: function (cmd) {
+    if (!this.commandBarEl) return;
+
+    // Remove any existing suggested button
+    var existing = this.commandBarEl.querySelector('.cmd-btn.suggested');
+    if (existing) existing.remove();
+
+    var self = this;
+    var btn = document.createElement('button');
+    btn.className = 'cmd-btn suggested';
+    btn.textContent = '💡 ' + cmd;
+    btn.addEventListener('click', function () {
+      self.setInput(cmd);
+      self.focus();
+    });
+    // Insert at the beginning of the command bar
+    this.commandBarEl.insertBefore(btn, this.commandBarEl.firstChild);
+  },
+
   // --------------------------------------------------------------------------
   // Submit callback
   // --------------------------------------------------------------------------

@@ -142,7 +142,7 @@ const Game = {
     // Reset idle timer on any command
     Game._resetIdleTimer(this.levelData);
 
-    Terminal.print(trimmed, 'terminal-input');
+    Terminal.print('> ' + trimmed, 'terminal-command');
 
     var parsed = CommandRegistry.parse(trimmed);
     if (!parsed) return;
@@ -281,6 +281,11 @@ const Game = {
           this._stuckCounter = 0;
         }
       }
+    }
+
+    // Handle suggested follow-up command
+    if (result && result.suggestedCmd) {
+      Terminal.showSuggestedCommand(result.suggestedCmd);
     }
 
     // Handle level completion
