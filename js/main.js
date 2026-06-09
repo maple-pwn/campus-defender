@@ -26,7 +26,11 @@ const Game = {
     GameState.init();
     Terminal.init();
     UI.init();
+    UI.initTheme();
     CommandRegistry.init();
+
+    // Init audio (lazy — real init on first user gesture)
+    if (typeof AudioFX !== 'undefined') AudioFX.init();
 
     // Wire up command submit
     Terminal.onSubmit(function (input) {
@@ -141,6 +145,7 @@ const Game = {
       Game.showLevelSelect();
       Terminal.clearInput();
       Terminal.focus();
+      if (typeof AudioFX !== 'undefined') AudioFX.play('success');
       return;
     }
 
@@ -148,6 +153,7 @@ const Game = {
       Game.handleLoadCommand(parsed.args);
       Terminal.clearInput();
       Terminal.focus();
+      if (typeof AudioFX !== 'undefined') AudioFX.play('success');
       return;
     }
     // ---- End free mode commands ----
@@ -175,14 +181,26 @@ const Game = {
 
     // Print output
     if (result && result.output) {
+      var hasError = false;
+      var hasSuccess = false;
       for (var i = 0; i < result.output.length; i++) {
         var line = result.output[i];
-        if (line.type === 'success') Terminal.printSuccess(line.text);
-        else if (line.type === 'error') Terminal.printError(line.text);
+        if (line.type === 'success') { Terminal.printSuccess(line.text); hasSuccess = true; }
+        else if (line.type === 'error') { Terminal.printError(line.text); hasError = true; }
         else if (line.type === 'system') Terminal.printSystem(line.text);
         else if (line.type === 'info') Terminal.printInfo(line.text);
         else Terminal.print(line.text);
       }
+      // Sound feedback
+      if (typeof AudioFX !== 'undefined') {
+        if (hasError) AudioFX.play('error');
+        else if (hasSuccess || result.objectivesMet) AudioFX.play('success');
+      }
+    }
+
+    // Crack sound
+    if (parsed.command === 'crack' && result && !result.output.some(function(l) { return l.type === 'error'; })) {
+      if (typeof AudioFX !== 'undefined') AudioFX.play('crack');
     }
 
     // Handle knowledge card
@@ -313,7 +331,11 @@ const Game = {
     // Award badge for boss levels
     if (isBoss && badge) {
       GameState.addBadge(badge);
+      if (typeof AudioFX !== 'undefined') AudioFX.play('badge');
     }
+
+    // Level complete sound
+    if (typeof AudioFX !== 'undefined') AudioFX.play('levelComplete');
 
     UI.updateScore(GameState._data.score);
 

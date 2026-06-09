@@ -137,7 +137,8 @@ const UI = {
 
     var textSpan = document.createElement('span');
     textSpan.className = 'mentor-text';
-    textSpan.textContent = text;
+    // Highlight commands and hostnames in the text
+    textSpan.innerHTML = this._highlightCommands(text);
 
     msgDiv.appendChild(nameSpan);
     msgDiv.appendChild(textSpan);
@@ -146,6 +147,36 @@ const UI = {
 
     // Auto-scroll to bottom
     this.mentorEl.scrollTop = this.mentorEl.scrollHeight;
+  },
+
+  /**
+   * Highlight command names and hostname patterns in text.
+   * Wraps matches in span.cmd-highlight for visual emphasis.
+   * @param {string} text
+   * @returns {string} HTML with highlighted commands
+   */
+  _highlightCommands: function (text) {
+    var escaped = this._escapeHtml(text);
+    // Known command names to highlight
+    var commands = ['help', 'scan', 'connect', 'exploit', 'curl', 'crack',
+                    'inspect', 'patch', 'report', 'freemode', 'levels', 'load'];
+    // Sort by length descending so longer matches take priority
+    commands.sort(function (a, b) { return b.length - a.length; });
+
+    // Build a regex: \b(command)\b  (word boundaries)
+    var cmdPattern = commands.map(function (c) {
+      return c.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    }).join('|');
+    var cmdRegex = new RegExp('\\b(' + cmdPattern + ')\\b', 'gi');
+
+    // Hostname pattern: xxx.xxx.xxx (at least two dots, domain-like)
+    var hostRegex = /\b([a-zA-Z0-9][-a-zA-Z0-9]*(?:\.[a-zA-Z0-9][-a-zA-Z0-9]*)+\.[a-zA-Z]{2,}(?::\d{1,5})?)\b/g;
+
+    // Apply highlighting: first hostnames, then commands (to avoid double-wrapping)
+    var result = escaped.replace(hostRegex, '<span class="cmd-highlight cmd-target">$1</span>');
+    result = result.replace(cmdRegex, '<span class="cmd-highlight">$1</span>');
+
+    return result;
   },
 
   /** Clear all mentor chat messages. */
@@ -291,5 +322,43 @@ const UI = {
     var div = document.createElement('div');
     div.appendChild(document.createTextNode(str));
     return div.innerHTML;
+  },
+
+  // ---------------------------------------------------------------------------
+  // Theme toggle
+  // ---------------------------------------------------------------------------
+
+  /** Toggle between dark and light theme, persist to localStorage. */
+  toggleTheme: function () {
+    var html = document.documentElement;
+    var btn = document.getElementById('theme-toggle');
+    var isLight = html.classList.toggle('light-theme');
+    localStorage.setItem('campus-defender-theme', isLight ? 'light' : 'dark');
+    if (btn) {
+      btn.textContent = isLight ? '☀️' : '🌙';
+      btn.title = isLight ? '切换夜间模式' : '切换日间模式';
+    }
+  },
+
+  /** Apply saved theme preference on init. Default is dark mode. */
+  initTheme: function () {
+    var saved = localStorage.getItem('campus-defender-theme');
+    // Only use light mode if user explicitly chose it before
+    var isLight = (saved === 'light');
+    var html = document.documentElement;
+    var btn = document.getElementById('theme-toggle');
+    if (isLight) {
+      html.classList.add('light-theme');
+    }
+    if (btn) {
+      btn.textContent = isLight ? '☀️' : '🌙';
+      btn.title = isLight ? '切换夜间模式' : '切换日间模式';
+    }
+
+    // Wire up button
+    var self = this;
+    if (btn) {
+      btn.onclick = function () { self.toggleTheme(); };
+    }
   },
 };

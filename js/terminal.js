@@ -311,6 +311,10 @@ const Terminal = {
         break;
 
       default:
+        // Keypress sound (only for printable keys, not modifiers)
+        if (e.key.length === 1 || e.key === 'Backspace' || e.key === ' ') {
+          if (typeof AudioFX !== 'undefined') AudioFX.play('keypress');
+        }
         // Any other key resets the tab-completion state so that the next
         // Tab press will re-calculate matches based on the new prefix.
         if (this._tabMatches.length > 0) {
@@ -327,7 +331,9 @@ const Terminal = {
    */
   _handleSubmit: function () {
     var input = this.getInput().trim();
-    if (!input) return;
+
+    // Enter key sound
+    if (typeof AudioFX !== 'undefined') AudioFX.play('enter');
 
     // Save to command history
     this.commandHistory.push(input);
