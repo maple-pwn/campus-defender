@@ -43,6 +43,20 @@ const Game = {
     document.getElementById('next-level-btn').onclick = function () { Game.loadNextLevel(); };
     document.getElementById('badge-ok-btn').onclick = function () { UI.hideBadge(); };
 
+    // Global Enter key handler for overlay dismissal (capture phase beats terminal input)
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      var levelComplete = document.getElementById('level-complete');
+      var badgeOverlay = document.getElementById('badge-overlay');
+      if (levelComplete && !levelComplete.classList.contains('hidden')) {
+        e.stopImmediatePropagation();
+        document.getElementById('next-level-btn').click();
+      } else if (badgeOverlay && !badgeOverlay.classList.contains('hidden')) {
+        e.stopImmediatePropagation();
+        document.getElementById('badge-ok-btn').click();
+      }
+    }, true); // capture phase — fires before terminal input handler
+
     // Show title screen (continue button enabled if save exists)
     UI.showTitleScreen(GameState.hasSave());
   },
