@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cyber Guardian — 白帽侦查员</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+/* ========== GLOBAL ========== */
+:root {
+  --bg: #0a0a0f; --bg2: #12121f; --panel: #1a1a2e;
+  --neon: #00ff41; --warn: #ff6b6b; --gold: #ffd93d;
+  --cyan: #00d4ff; --white: #e0e0e0; --dim: #777;
+  --font-pixel: 'Zpix', 'zpix', 'Fusion Pixel 12px Monospaced SC',
+    'Ark Pixel 12px Monospaced zh_cn', '新宋体', 'SimSun', monospace;
+  --font-terminal: var(--font-pixel);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:#000; color:var(--white); font-family:var(--font-pixel);
+  display:flex; justify-content:center; align-items:center;
+  min-height:100vh; overflow:hidden; user-select:none;
+  -webkit-font-smoothing:none; -moz-osx-font-smoothing:grayscale;
+  text-rendering:geometricPrecision;
+}
+#game {
+  width:1000px; height:700px; background:var(--bg);
+  border:4px solid #333; position:relative; overflow:hidden;
+  box-shadow: 0 0 40px rgba(0,255,65,0.1), 0 0 80px rgba(0,0,0,0.8);
+  image-rendering:pixelated;
+}
+.footer-mark {
+  position:absolute; left:14px; bottom:10px; z-index:29; pointer-events:none;
+  font-size:12px; line-height:1.7; color:rgba(224,224,224,0.52);
+  text-shadow:0 0 8px rgba(0,0,0,0.9);
+}
+.footer-mark .org { color:rgba(0,212,255,0.68); }
+.footer-mark .purpose { color:rgba(0,255,65,0.55); }
+/* CRT overlay */
+#crt {
+  position:absolute; top:0; left:0; width:100%; height:100%;
+  pointer-events:none; z-index:1;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,0.06) 0px, rgba(0,0,0,0.06) 2px, transparent 2px, transparent 4px);
+  opacity:0.5;
+}
+
+/* ========== SCREENS ========== */
+.screen { position:absolute; top:0; left:0; width:100%; height:100%; display:none; flex-direction:column; }
+
+/* ========== START SCREEN ========== */
+#start-screen {
+  justify-content:center; align-items:center;
+  background: linear-gradient(180deg, #0a0a1a 0%, #0d1b2a 50%, #0a0a1a 100%);
+}
+#start-screen .title {
+  font-size:42px; color:var(--neon); text-shadow:0 0 20px var(--neon);
+  text-align:center; line-height:1.6; animation: flicker 3s infinite;
+}
+@keyframes flicker {
+  0%,100% { opacity:1; } 92% { opacity:1; } 93% { opacity:0.6; } 94% { opacity:1; } 96% { opacity:0.5; } 97% { opacity:1; }
+}
+#start-screen .subtitle { font-size:16px; color:var(--cyan); margin-top:12px; text-align:center; }
+#start-screen .start-btn {
+  margin-top:40px; padding:18px 60px; font-size:18px; font-family:var(--font-pixel);
+  background:transparent; color:var(--neon); border:3px solid var(--neon);
+  cursor:pointer; transition:all 0.15s; letter-spacing:2px;
+  box-shadow: 0 0 10px rgba(0,255,65,0.3);
+}
+#start-screen .start-btn:hover { background:var(--neon); color:#000; box-shadow:0 0 30px var(--neon); }
+#start-screen .level-sel { margin-top:30px; display:flex; gap:16px; }
+#start-screen .level-sel button {
+  padding:12px 24px; font-size:13px; font-family:var(--font-pixel);
+  background:transparent; color:var(--dim); border:2px solid var(--dim); cursor:pointer;
+}
+#start-screen .level-sel button.unlocked { color:var(--cyan); border-color:var(--cyan); }
+#start-screen .level-sel button.unlocked:hover { background:var(--cyan); color:#000; }
+
+/* ========== TOP BAR ========== */
+#top-bar {
+  height:52px; background:var(--bg2); border-bottom:2px solid #333;
+  display:flex; align-items:center; padding:0 16px; gap:16px; flex-shrink:0;
+}
+#top-bar .level-name { font-size:14px; color:var(--cyan); }
+#top-bar .score { font-size:14px; color:var(--gold); margin-left:auto; }
+#top-bar .hint-btn {
+  font-size:14px; font-family:var(--font-pixel); background:transparent;
+  color:var(--gold); border:2px solid var(--gold); cursor:pointer;
+  padding:6px 12px; transition:all 0.15s;
+}
+#top-bar .hint-btn:hover { background:var(--gold); color:#000; }
+#top-bar .clue-btn {
+  font-size:13px; font-family:var(--font-pixel); background:transparent;
+  color:var(--cyan); border:2px solid var(--cyan); cursor:pointer;
+  padding:6px 12px;
+}
+#top-bar .clue-btn:hover { background:var(--cyan); color:#000; }
+
+/* ========== SCENE AREA ========== */
+#scene { flex:1; position:relative; overflow:hidden; cursor:default; }
+.room { position:absolute; top:0; left:0; width:100%; height:100%; display:none; }
+.room.active { display:block; }
+
+/* Room backgrounds */
+.room-bedroom {
+  background: linear-gradient(180deg, #1a0a0a 0%, #1a1218 40%, #1a1418 60%, #2a1a1a 100%);
+}
+.room-office {
+  background: linear-gradient(180deg, #0a1a1a 0%, #101820 40%, #101820 60%, #1a1a2a 100%);
+}
+.room-server {
+  background: linear-gradient(180deg, #050510 0%, #0a0a1a 30%, #0a0a1a 70%, #0a1015 100%);
+}
+
+/* Hotspot items */
+.hotspot {
+  position:absolute; cursor:pointer; transition: all 0.2s;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+  padding:10px; border:3px solid transparent; overflow:visible;
+}
+.hotspot:hover {
+  border-color:var(--gold); background:rgba(255,217,61,0.08);
+  filter: brightness(1.3);
+  animation: pulse 0.8s infinite;
+}
+.hotspot:active { transform:scale(0.92); }
+.hotspot .icon { font-size:40px; text-align:center; image-rendering:pixelated; line-height:1; }
+.hotspot .label {
+  font-size:12px; color:var(--dim); text-align:center; white-space:nowrap;
+  opacity:0; transition:opacity 0.2s;
+}
+.hotspot:hover .label { opacity:1; color:var(--gold); }
+.hotspot.collected { filter:brightness(0.6); border-color:var(--dim); background:rgba(0,255,65,0.05); }
+.hotspot.collected .label { opacity:1; color:var(--neon); }
+
+@keyframes pulse {
+  0%,100% { transform:scale(1); } 50% { transform:scale(1.05); }
+}
+@keyframes glow {
+  0%,100% { box-shadow: 0 0 10px rgba(0,255,65,0.6), 0 0 25px rgba(0,255,65,0.2); }
+  50% { box-shadow: 0 0 20px rgba(0,255,65,0.9), 0 0 50px rgba(0,255,65,0.5), 0 0 80px rgba(0,255,65,0.2); }
+}
+.hotspot.action-item {
+  border-color: var(--neon) !important;
+  border-width: 3px !important;
+  animation: glow 1.5s infinite;
+}
+.hotspot.action-item:hover {
+  animation: glow 0.4s infinite, pulse 0.6s infinite;
+  border-color: #fff !important;
+}
+.hotspot.action-item .label {
+  opacity: 1 !important; color: var(--neon) !important;
+  font-weight: bold;
+}
+
+/* ========== POPUPS ========== */
+.popup-overlay {
+  position:absolute; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.7); display:none; justify-content:center;
+  align-items:center; z-index:10;
+}
+.popup-overlay.show { display:flex; }
+.popup {
+  background:var(--panel); border:3px solid var(--cyan);
+  padding:20px; max-width:520px; width:90%; max-height:80%;
+  overflow-y:auto; position:relative;
+  box-shadow: 0 0 20px rgba(0,212,255,0.2), 8px 8px 0 #000;
+}
+.popup .close-btn {
+  position:absolute; top:8px; right:12px;
+  font-family:var(--font-pixel); font-size:18px; color:var(--warn);
+  background:none; border:none; cursor:pointer;
+}
+.popup .close-btn:hover { color:#fff; }
+.popup h3 { font-size:19px; color:var(--neon); margin-bottom:14px; }
+.popup p { font-size:17px; line-height:1.9; color:var(--white); }
+
+/* ========== COMPUTER / TERMINAL PANELS ========== */
+.panel-overlay {
+  position:absolute; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.85); display:none; justify-content:center;
+  align-items:center; z-index:20;
+}
+.panel-overlay.show { display:flex; }
+
+/* Computer login screen */
+#login-panel {
+  background:var(--bg); border:3px solid #444; width:540px;
+  box-shadow: 0 0 30px rgba(0,255,65,0.15), 8px 8px 0 #000;
+}
+#login-panel .screen-header {
+  background:#111; padding:10px 16px; font-size:14px; color:var(--dim);
+  border-bottom:1px solid #333; display:flex; justify-content:space-between;
+}
+#login-panel .screen-body { padding:32px; }
+#login-panel .login-label { font-size:17px; color:var(--neon); margin-bottom:12px; }
+#login-panel .login-hint { font-size:15px; color:var(--gold); margin-bottom:20px; }
+#login-panel .password-input {
+  width:100%; padding:14px 16px; font-size:20px; font-family:var(--font-terminal);
+  background:#050508; color:var(--neon); border:3px solid var(--neon);
+  outline:none; letter-spacing:3px;
+  box-shadow: 0 0 12px rgba(0,255,65,0.2);
+}
+#login-panel .password-input:focus {
+  border-color:#fff; box-shadow: 0 0 20px rgba(0,255,65,0.4);
+}
+#login-panel .password-input::placeholder { color:#444; font-size:14px; letter-spacing:1px; }
+#login-panel .strength-bar {
+  height:12px; margin-top:12px; background:#222; border-radius:0;
+  overflow:hidden; border:1px solid #333;
+}
+#login-panel .strength-fill { height:100%; width:0%; transition:width 0.3s; }
+#login-panel .login-btn {
+  margin-top:20px; padding:12px 32px; font-size:14px; font-family:var(--font-pixel);
+  background:transparent; color:var(--neon); border:3px solid var(--neon); cursor:pointer;
+}
+#login-panel .login-btn:hover { background:var(--neon); color:#000; }
+#login-panel .login-feedback { font-size:15px; line-height:1.8; margin-top:12px; min-height:22px; }
+
+/* Terminal panel */
+#terminal-panel {
+  background:var(--bg); border:3px solid #444; width:720px;
+  box-shadow: 0 0 30px rgba(0,255,65,0.15), 8px 8px 0 #000;
+}
+#terminal-panel .term-header {
+  background:#111; padding:8px 14px; font-size:13px; color:var(--dim);
+  border-bottom:1px solid #333;
+}
+#terminal-panel .term-body {
+  padding:16px; min-height:240px; max-height:380px; overflow-y:auto;
+  font-size:17px; font-family:var(--font-terminal); line-height:1.85;
+  color:var(--neon); background:#050508;
+}
+#terminal-panel .term-input-line { display:flex; align-items:center; }
+#terminal-panel .term-prompt { color:var(--cyan); margin-right:8px; white-space:nowrap; }
+#terminal-panel .term-input {
+  flex:1; background:transparent; border:none; color:var(--neon);
+  font-family:var(--font-terminal); font-size:17px; outline:none; caret-color:var(--neon);
+}
+#terminal-panel .term-hint {
+  margin-top:10px; font-size:15px; color:var(--dim); border-top:1px solid #222; padding-top:10px;
+}
+
+/* Email panel */
+#email-panel {
+  background:var(--bg); border:3px solid #444; width:640px; max-height:620px;
+  box-shadow: 0 0 30px rgba(0,255,65,0.15), 8px 8px 0 #000;
+}
+#email-panel .email-header-bar {
+  background:#111; padding:10px 16px; font-size:14px; color:var(--dim);
+  border-bottom:1px solid #333;
+}
+#email-panel .email-body { padding:16px; max-height:560px; overflow-y:auto; }
+#email-panel .email-field { margin-bottom:10px; }
+#email-panel .email-field .field-label { font-size:14px; color:var(--dim); }
+#email-panel .email-field .field-value { font-size:16px; color:var(--white); margin-top:2px; }
+#email-panel .email-field.can-inspect { cursor:pointer; padding:6px; border:1px solid transparent; }
+#email-panel .email-field.can-inspect:hover { border-color:var(--gold); background:rgba(255,217,61,0.1); }
+#email-panel .email-field.can-inspect:hover::after { content:' [点此检查]'; font-size:11px; color:var(--gold); }
+#email-panel .email-raw-btn { margin-top:14px; font-size:14px; font-family:var(--font-pixel);
+  background:transparent; color:var(--dim); border:1px solid var(--dim); cursor:pointer; padding:8px 12px; }
+#email-panel .email-raw-btn:hover { color:var(--cyan); border-color:var(--cyan); }
+#email-panel .email-raw { display:none; margin-top:10px; padding:10px; background:#050508;
+  font-family:var(--font-terminal); font-size:14px; color:var(--neon); line-height:1.7; }
+#email-panel .email-raw.show { display:block; }
+#email-panel .case-brief {
+  font-size:14px; color:var(--gold); line-height:1.75; margin-bottom:12px;
+  padding:10px; border-left:2px solid var(--gold); background:rgba(255,217,61,0.06);
+}
+#email-panel .trace-terminal {
+  margin-top:12px; padding:12px; background:#050508; border:1px solid #333;
+}
+#email-panel .trace-title { font-size:14px; color:var(--cyan); margin-bottom:8px; }
+#email-panel .trace-note { font-size:13px; color:var(--dim); line-height:1.65; margin-bottom:8px; }
+#email-panel .trace-line { display:flex; gap:8px; align-items:center; }
+#email-panel .trace-line input {
+  flex:1; min-width:0; padding:8px; font-size:14px; font-family:var(--font-terminal);
+  background:#000; color:var(--neon); border:1px solid #333; outline:none;
+}
+#email-panel .trace-line input:focus { border-color:var(--neon); }
+#email-panel .trace-line button {
+  flex:0 0 auto; padding:8px 12px; font-size:12px; font-family:var(--font-pixel);
+  background:transparent; color:var(--cyan); border:1px solid var(--cyan); cursor:pointer;
+}
+#email-panel .trace-line button:hover { background:var(--cyan); color:#000; }
+#email-panel .trace-line button:disabled { color:#555; border-color:#333; cursor:not-allowed; }
+#email-panel .trace-line button:disabled:hover { background:transparent; color:#555; }
+#email-panel #whois-result { margin-top:8px; font-size:13px; color:var(--white); line-height:1.7; }
+
+/* ========== CLUE NOTEBOOK ========== */
+#notebook {
+  position:absolute; right:0; top:52px; width:320px; height:calc(100% - 52px);
+  background:var(--panel); border-left:3px solid #333; z-index:15;
+  transform:translateX(100%); transition:transform 0.3s;
+  padding:18px; overflow-y:auto;
+}
+#notebook.open { transform:translateX(0); }
+#notebook h3 { font-size:16px; color:var(--gold); }
+#notebook .clue-item {
+  font-size:15px; color:var(--white); padding:10px; margin-bottom:8px;
+  background:rgba(255,255,255,0.03); border-left:2px solid var(--cyan);
+  line-height:1.8;
+}
+
+/* ========== LEVEL COMPLETE ========== */
+#level-complete {
+  position:absolute; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.9); display:none; flex-direction:column;
+  justify-content:center; align-items:center; z-index:30;
+}
+#level-complete.show { display:flex; }
+#level-complete h2 { font-size:30px; color:var(--neon); text-shadow:0 0 20px var(--neon); }
+#level-complete .stars { font-size:48px; margin:16px 0; }
+#level-complete .score-text { font-size:17px; color:var(--gold); margin-bottom:10px; }
+#level-complete .knowledge-card {
+  margin-top:18px; padding:20px; background:var(--panel); border:2px solid var(--cyan);
+  max-width:620px; width:90%;
+}
+#level-complete .knowledge-card h4 { font-size:16px; color:var(--cyan); margin-bottom:10px; }
+#level-complete .knowledge-card ul { list-style:none; }
+#level-complete .knowledge-card li { font-size:16px; color:var(--white); line-height:2.1; padding-left:20px; position:relative; }
+#level-complete .knowledge-card li::before { content:'▸'; position:absolute; left:0; color:var(--neon); }
+#level-complete .next-btn {
+  margin-top:24px; padding:14px 40px; font-size:15px; font-family:var(--font-pixel);
+  background:transparent; color:var(--neon); border:2px solid var(--neon); cursor:pointer;
+}
+#level-complete .next-btn:hover { background:var(--neon); color:#000; }
+
+/* ========== GAME COMPLETE ========== */
+#game-complete {
+  position:absolute; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.95); display:none; flex-direction:column;
+  justify-content:center; align-items:center; z-index:30;
+}
+#game-complete.show { display:flex; }
+#game-complete h2 { font-size:32px; color:var(--gold); text-shadow:0 0 30px var(--gold); }
+#game-complete .rank { font-size:21px; color:var(--neon); margin:14px 0; }
+#game-complete .final-score { font-size:17px; color:var(--white); margin:10px 0; }
+#game-complete .restart-btn {
+  margin-top:28px; padding:14px 40px; font-size:15px; font-family:var(--font-pixel);
+  background:transparent; color:var(--gold); border:2px solid var(--gold); cursor:pointer;
+}
+#game-complete .restart-btn:hover { background:var(--gold); color:#000; }
+
+/* ========== PARTICLES CANVAS ========== */
+#particles {
+  position:absolute; top:0; left:0; width:100%; height:100%;
+  pointer-events:none; z-index:28; display:none;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width:1020px) {
+  #game { width:100vw; height:100vw; max-height:100vh; }
+  #notebook { width:220px; }
+}
+</style>
+</head>
+<body>
+<div id="game">
+
+  <div id="crt"></div>
+  <div class="footer-mark">
+    <div class="org">武汉大学国家网络安全学院</div>
+  </div>
+
+  <!-- ===== START SCREEN ===== -->
+  <div id="start-screen" class="screen" style="display:flex;justify-content:center;align-items:center;">
+    <div class="title">⚔️ 白帽侦查员<br>CYBER GUARDIAN</div>
+    <div class="subtitle">像素解谜 · 网络安全 · 三关挑战</div>
+    <button class="start-btn" onclick="startGame()">▶ 开始任务</button>
+    <div class="level-sel" id="level-select"></div>
+  </div>
+
+  <!-- ===== GAME SCREEN ===== -->
+  <div id="game-screen" class="screen">
+    <div id="top-bar">
+      <span class="level-name" id="bar-level">任务一</span>
+      <span class="score" id="bar-score">🔒 安全指数: 100</span>
+      <button class="clue-btn" onclick="toggleNotebook()">📒 线索本</button>
+      <button class="hint-btn" onclick="showGuideHint()">❓ 引导</button>
+    </div>
+    <div id="scene">
+      <!-- Room content injected by JS -->
+    </div>
+    <div id="notebook">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 style="margin:0;">📒 线索记录</h3>
+        <button onclick="toggleNotebook()" style="background:none;border:none;color:var(--warn);font-family:var(--font-pixel);font-size:16px;cursor:pointer;padding:0 4px;">✕</button>
+      </div>
+      <div id="clue-list"></div>
+    </div>
+  </div>
+
+  <!-- ===== DETAIL POPUP ===== -->
+  <div class="popup-overlay" id="detail-overlay">
+    <div class="popup" id="detail-popup">
+      <button class="close-btn" onclick="closeDetail()">✕</button>
+      <div id="detail-content"></div>
+    </div>
+  </div>
+
+  <!-- ===== LOGIN PANEL ===== -->
+  <div class="panel-overlay" id="login-overlay">
+    <div id="login-panel">
+      <div class="screen-header"><span>💻 系统登录</span><span>Locked</span></div>
+      <div class="screen-body">
+        <button class="close-btn" onclick="var o=document.getElementById('login-overlay');o.classList.remove('show');o.style.display='none'" style="top:8px;right:12px;font-size:16px;">✕</button>
+      <div class="login-label" onclick="document.getElementById('password-input').focus()">🔐 请输入密码：</div>
+        <div class="login-hint" id="login-clue-display" onclick="document.getElementById('password-input').focus()"></div>
+        <input class="password-input" id="password-input" type="text" placeholder="点击这里输入密码..."
+               oninput="updateStrength()" onkeydown="if(event.key==='Enter')tryLogin()" autocomplete="off" autofocus>
+        <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
+        <div style="font-size:13px;color:var(--dim);margin-top:6px;" id="strength-text"></div>
+        <button class="login-btn" onclick="tryLogin()">↵ 登 录</button>
+        <div class="login-feedback" id="login-feedback"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== EMAIL PANEL ===== -->
+  <div class="panel-overlay" id="email-overlay">
+    <div id="email-panel">
+      <div class="email-header-bar">📧 邮件客户端 — 已登入</div>
+      <div class="email-body" id="email-body"></div>
+    </div>
+  </div>
+
+  <!-- ===== TERMINAL PANEL ===== -->
+  <div class="panel-overlay" id="terminal-overlay">
+    <div id="terminal-panel">
+      <div class="term-header">🖥️ 服务器终端 — server-admin@firewall:~$</div>
+      <div class="term-body" id="term-output"></div>
+      <div class="term-hint" id="term-hint-area">💡 输入 'help' 查看可用命令</div>
+    </div>
+  </div>
+
+  <!-- ===== LEVEL COMPLETE ===== -->
+  <div id="level-complete">
+    <h2 id="complete-title"></h2>
+    <div class="stars" id="complete-stars"></div>
+    <div class="score-text" id="complete-score"></div>
+    <div class="knowledge-card" id="knowledge-card"></div>
+    <button class="next-btn" id="next-btn" onclick="nextLevel()">▶ 下一任务</button>
+  </div>
+
+  <!-- ===== GAME COMPLETE ===== -->
+  <div id="game-complete">
+    <h2>🏆 任务全部完成！</h2>
+    <div class="rank" id="final-rank"></div>
+    <div class="final-score" id="final-score"></div>
+    <button class="restart-btn" onclick="restartGame()">↺ 重新开始</button>
+  </div>
+
+  <!-- ===== PARTICLES ===== -->
+  <canvas id="particles"></canvas>
+</div>
+
+<script>
+// ============================================================
+// AUDIO ENGINE — 8-bit pixel sounds
+// ============================================================
+let audioCtx;
+function initAudio() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch(e) { audioCtx = null; }
+  }
+}
+
+function beep(freq, duration, type='square', vol=0.08) {
+  if (!audioCtx) return;
+  try {
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + duration);
+  } catch(e) {}
+}
+
+function sfxClick() { try { beep(800, 0.06); } catch(e) {} }
+function sfxCollect() { try { beep(1200, 0.08); beep(1600, 0.06); } catch(e) {} }
+function sfxSuccess() { try { beep(523,0.1); beep(659,0.1); beep(784,0.15); } catch(e) {} }
+function sfxFail() { try { beep(150,0.2, 'sawtooth'); } catch(e) {} }
+function sfxComplete() {
+  try { [523,659,784,1047].forEach((f,i) => setTimeout(() => beep(f,0.15,'square',0.1), i*120)); } catch(e) {}
+}
+
+// ============================================================
+// GAME STATE
+// ============================================================
+const state = {
+  currentLevel: 1,
+  score: 100,
+  clues: [],           // collected clue IDs
+  levelClues: {},      // per-level clues collected
+  completedLevels: [],
+  sceneItems: {},      // which items interacted with
+  hintUsed: false,
+  hintCooldown: 0,
+  loginAttempts: 0,     // for level 1 anti-stuck password reveal
+  terminalState: {},   // for level 3 terminal progress
+  emailInspected: {},   // for level 2 email inspection
+};
+
+function adjustScore(delta) {
+  state.score = Math.max(0, Math.min(100, state.score + delta));
+  const bar = document.getElementById('bar-score');
+  if (bar) bar.textContent = '🔒 安全指数: ' + state.score;
+}
+
+function resetLevelState() {
+  state.levelClues[state.currentLevel] = [];
+  state.sceneItems = {};
+  state.clues = [];
+  state.hintUsed = false;
+  state.hintCooldown = 0;
+  state.loginAttempts = 0;
+  state.terminalState = { commands:[], portsClosed:[], passwordChanged:false, firewallEnabled:false };
+  state.emailInspected = { senderChecked:false, linkChecked:false, rawChecked:false, whoisDone:false };
+}
+
+// ============================================================
+// SCENE DATA — each level's room items
+// ============================================================
+const sceneData = {
+  1: { // Bedroom
+    name: '任务一：破解弱密码',
+    bg: 'room-bedroom',
+    description: '你潜入黑客的卧室。电脑锁着，<br>找到密码线索，登入系统。',
+    items: [
+      { id:'photo', icon:'🖼️', label:'桌上的相框', x:190, y:330, w:120, h:120,
+        detail:{ title:'🖼️ 桌上的相框', text:'一张狗狗的照片，毛发金黄，笑得很开心。<br>相框背面用马克笔写着：<br><span style="color:#ffd93d">"我的好伙伴 —— 旺财"</span>' },
+        clue:'线索：宠物狗名叫"旺财"',
+      },
+      { id:'calendar', icon:'📅', label:'墙上日历', x:740, y:70, w:120, h:130,
+        detail:{ title:'📅 墙上日历', text:'一本破旧的日历，翻到十月份。<br><span style="color:#ffd93d">10月15日</span>被红色记号笔画了一个大圈，<br>旁边歪歪扭扭写着一个 ❤️。<br>下面小字标注："旺财到家纪念日"' },
+        clue:'线索：重要日期是10月15日',
+      },
+      { id:'sticky', icon:'📝', label:'屏幕旁便利贴', x:580, y:200, w:110, h:100,
+        detail:{ title:'📝 便利贴', text:'贴在显示器边缘的黄色便利贴：<br><span style="color:#ffd93d">"密码格式：名字+日期<br>都小写，别搞错了"</span><br>（这黑客的安全意识也太差了...）' },
+        clue:'线索：密码格式为"名字+日期"，全小写',
+      },
+      { id:'bookshelf', icon:'📚', label:'书架', x:40, y:100, w:110, h:200,
+        detail:{ title:'📚 书架', text:'杂乱的书架。一本《宠物犬护理指南》格外显眼，<br>书签夹在第15页，章节标题是<br><span style="color:#ffd93d">"迎接你的新伙伴——给旺财一个家"</span>' },
+        clue:'线索：书签确认了狗狗叫"旺财"',
+      },
+      { id:'computer', icon:'🖥️', label:'电脑', x:410, y:210, w:140, h:130,
+        detail:{ title:'🖥️ 电脑', text:'台式电脑，屏幕显示登录界面。<br>看来需要输入密码才能进入。',
+          action:'login' },
+      },
+      { id:'poster', icon:'🎸', label:'乐队海报', x:820, y:280, w:110, h:110,
+        detail:{ title:'🎸 乐队海报', text:'一张摇滚乐队海报。"Cyber Wolves"巡演。<br>看起来和密码没什么关系...<br>（也许只是装饰）' },
+      },
+    ],
+    goal: '收集线索，拼出密码，登录电脑',
+    correctPassword: 'wangcai1015',
+  },
+  2: { // Office — email investigation
+    name: '任务二：追踪钓鱼邮件',
+    bg: 'room-office',
+    description: '登入黑客电脑后，发现一封可疑邮件。<br>仔细检查邮件，追踪攻击来源。',
+    items: [
+      { id:'computer2', icon:'🖥️', label:'电脑', x:410, y:200, w:140, h:130,
+        detail:{ title:'🖥️ 电脑屏幕', text:'屏幕上显示着一封打开的邮件...<br>需要仔细检查这封可疑邮件。',
+          action:'email' },
+      },
+      { id:'trash', icon:'🗑️', label:'废纸篓', x:700, y:430, w:120, h:110,
+        detail:{ title:'🗑️ 废纸篓', text:'废纸篓里有一张揉皱的纸，展开看看：<br><span style="color:#ffd93d">"下次别再用 hacker@evil.cn 这种<br>明显的地址发钓鱼邮件了！<br>记得伪造得像一点。"</span>' },
+        clue:'线索：攻击者邮箱是 hacker@evil.cn',
+      },
+      { id:'notes', icon:'📋', label:'桌上笔记', x:200, y:310, w:120, h:110,
+        detail:{ title:'📋 桌上的笔记', text:'潦草的笔记：<br><span style="color:#ffd93d">"查看邮件原始头！<br>那里有真正来源IP。<br>把IP提交到溯源终端。"</span>' },
+        clue:'线索：查看邮件原始头，提取来源IP后提交到溯源终端',
+      },
+      { id:'cabinet', icon:'🗄️', label:'文件柜', x:790, y:260, w:110, h:140,
+        detail:{ title:'🗄️ 文件柜', text:'锁着的文件柜。标签上写着<br>"钓鱼模板 - 银行类"。<br>看来这家伙经常干这事...<br>（需要先完成电脑调查才能打开）' },
+      },
+    ],
+    goal: '查看原始邮件头获取来源IP → 输入溯源终端锁定攻击源',
+  },
+  3: { // Server room
+    name: '任务三：加固服务器',
+    bg: 'room-server',
+    description: '追踪到被入侵的服务器机房。<br>用命令行关闭漏洞，恢复安全。',
+    items: [
+      { id:'topology', icon:'🗺️', label:'网络拓扑图', x:30, y:50, w:130, h:150,
+        detail:{ title:'🗺️ 墙上网络拓扑图', text:'显示所有服务器和开放端口：<br>🖥️ Web服务器 — 端口 22(SSH), 80(HTTP), 443(HTTPS)<br>🖥️ 数据库 — 端口 3306(MySQL)<br>🖥️ 旧服务器 — 端口 <span style="color:#ff6b6b">23(Telnet)</span>, <span style="color:#ff6b6b">21(FTP)</span>, 22(SSH)<br><br><span style="color:#ffd93d">Telnet(23)和FTP(21)是不安全的！</span>' },
+        clue:'线索：Telnet(23号端口)和FTP(21号端口)需要关闭',
+      },
+      { id:'checklist', icon:'📋', label:'安全检查清单', x:190, y:320, w:130, h:110,
+        detail:{ title:'📋 安全检查清单', text:'夹板上钉着一份清单：<br>✅ 关闭 Telnet (端口23)<br>✅ 关闭 FTP (端口21)<br>✅ 修改默认密码<br>✅ 启用防火墙<br><br><span style="color:#ffd93d">备注：用终端操作。</span>' },
+        clue:'线索：需要在终端完成4项操作',
+      },
+      { id:'terminal', icon:'🖥️', label:'服务器终端', x:410, y:290, w:140, h:130,
+        detail:{ title:'🖥️ 服务器终端', text:'一台连接的终端机，命令行界面。<br>可以在这里执行系统管理命令。<br><br>屏幕显示：<br><span style="color:#00ff41">server-admin@firewall:~$ _</span>',
+          action:'terminal' },
+      },
+      { id:'server-rack', icon:'🗄️', label:'服务器机柜', x:720, y:70, w:120, h:240,
+        detail:{ title:'🗄️ 服务器机柜', text:'几台服务器在运行。指示灯闪烁。<br>靠近看，有一台贴着便利贴：<br><span style="color:#ffd93d">"默认密码: admin/admin"</span><br><br>这台服务器的标签上写着<br>"数据库服务器 — 192.168.1.100"' },
+        clue:'线索：数据库服务器使用默认密码 admin/admin',
+      },
+      { id:'manual', icon:'📕', label:'安全手册', x:820, y:380, w:110, h:110,
+        detail:{ title:'📕 安全手册', text:'封面写着《网络安全运维手册》。<br>翻到书签页：<br><br><span style="color:#ffd93d">"最小权限原则：<br>只开放业务必需的端口。<br>关闭不必要的服务。<br>不使用默认密码。"</span>' },
+        clue:'线索：最小权限原则 — 只开放必要的端口',
+      },
+    ],
+    goal: '登入终端，执行命令：关闭Telnet/FTP、修改密码、启用防火墙',
+  },
+};
+
+// ============================================================
+// RENDER SCENE
+// ============================================================
+function renderScene() {
+  const data = sceneData[state.currentLevel];
+  const scene = document.getElementById('scene');
+  document.getElementById('bar-level').textContent = data.name;
+  document.getElementById('bar-score').textContent = '🔒 安全指数: ' + state.score;
+
+  let html = `<div class="room ${data.bg} active" style="position:relative;width:100%;height:100%;">`;
+  // Room label
+  html += `<div style="position:absolute;top:14px;left:20px;font-size:15px;color:var(--dim);">${data.name}</div>`;
+  html += `<div style="position:absolute;top:42px;left:20px;font-size:13px;color:var(--dim);line-height:1.9;">${data.description}</div>`;
+  html += `<div style="position:absolute;bottom:16px;right:20px;font-size:13px;color:var(--cyan);text-align:right;line-height:1.7;">🎯 ${data.goal}</div>`;
+
+  // Items
+  data.items.forEach(item => {
+    const collected = state.levelClues[state.currentLevel]?.includes(item.id);
+    const hasAction = (item.action || item.detail?.action) ? ' action-item' : '';
+    html += `<div class="hotspot ${collected ? 'collected' : ''}${hasAction}"
+      style="left:${item.x}px;top:${item.y}px;width:${item.w}px;height:${item.h}px;"
+      data-item-id="${item.id}">
+      <span class="icon">${item.icon}</span>
+      <span class="label">${collected ? '✓ '+item.label : item.label}</span>
+    </div>`;
+  });
+
+  html += '</div>';
+  scene.innerHTML = html;
+}
+
+// ============================================================
+// ITEM CLICK HANDLER
+// ============================================================
+function clickItem(itemId) {
+  initAudio();
+  const data = sceneData[state.currentLevel];
+  const item = data.items.find(i => i.id === itemId);
+  if (!item) return;
+
+  sfxClick();
+
+  // Mark as collected
+  if (!state.levelClues[state.currentLevel]) state.levelClues[state.currentLevel] = [];
+  if (!state.levelClues[state.currentLevel].includes(itemId)) {
+    state.levelClues[state.currentLevel].push(itemId);
+    if (item.clue) {
+      state.clues.push(item.clue);
+      sfxCollect();
+      updateNotebook();
+    }
+  }
+
+  // If item has an action, trigger it. Some scene entries store the action
+  // inside detail with the panel copy, so support both shapes.
+  const action = item.action || item.detail?.action;
+  if (action === 'login') {
+    openLoginPanel();
+  } else if (action === 'email') {
+    openEmailPanel();
+  } else if (action === 'terminal') {
+    openTerminal();
+  } else {
+    showDetail(item.detail);
+  }
+
+  renderScene();
+}
+
+// ============================================================
+// DETAIL POPUP
+// ============================================================
+function showDetail(detail) {
+  const overlay = document.getElementById('detail-overlay');
+  const content = document.getElementById('detail-content');
+  content.innerHTML = `<h3>${detail.title}</h3><p>${detail.text}</p>`;
+  overlay.style.display = 'flex';
+}
+
+function closeDetail() {
+  document.getElementById('detail-overlay').style.display = 'none';
+}
+
+// ============================================================
+// NOTEBOOK
+// ============================================================
+function toggleNotebook() {
+  document.getElementById('notebook').classList.toggle('open');
+  updateNotebook();
+}
+
+function updateNotebook() {
+  const list = document.getElementById('clue-list');
+  if (state.clues.length === 0) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--dim);line-height:1.8;">还没有发现线索。去场景里点点看！</div>';
+    return;
+  }
+  list.innerHTML = state.clues.map(c =>
+    `<div class="clue-item">${c}</div>`
+  ).join('');
+}
+
+// ============================================================
+// GUIDE HINT SYSTEM
+// ============================================================
+const guideHints = {
+  1: {
+    early: '💡 引导：黑客的密码可能跟他生活中熟悉的东西有关。房间里有什么私人物品？',
+    mid: '💡 引导：你已经找到一些线索了。名字和日期...把它们组合起来试试？',
+    stuck: '💡 引导：相框里的"旺财" + 日历上的"1015" = ？别忘了便利贴说的格式。',
+  },
+  2: {
+    early: '💡 引导：打开电脑查看邮件。你要找的是攻击源IP，普通正文不一定可信。',
+    mid: '💡 引导：点击"查看原始邮件头"，Received 记录里会暴露真正来源IP。',
+    stuck: '💡 引导：拿到来源IP后，把它输入邮件底部的“攻击源溯源终端”。提交正确IP即可完成本关。',
+  },
+  3: {
+    early: '💡 引导：先看看墙上的拓扑图和检查清单，了解需要做什么，再去终端操作。',
+    mid: '💡 引导：在终端输入 help 看看有哪些可用命令。先关闭不安全的端口。',
+    stuck: '💡 引导：依次执行：关闭Telnet → 关闭FTP → 修改密码 → 启用防火墙。每个命令后都会有提示。',
+  },
+};
+
+function showGuideHint() {
+  initAudio(); sfxClick();
+  const lvl = state.currentLevel;
+  const collected = state.levelClues[lvl]?.length || 0;
+  const totalItems = sceneData[lvl].items.length;
+  let stage;
+  if (collected <= 1) stage = 'early';
+  else if (collected <= Math.ceil(totalItems * 0.6)) stage = 'mid';
+  else stage = 'stuck';
+
+  const hintText = guideHints[lvl][stage];
+  showDetail({ title: '❓ 情报支援', text: hintText });
+  state.hintUsed = true;
+}
+
+// ============================================================
+// LEVEL 1 — LOGIN PANEL
+// ============================================================
+function openLoginPanel() {
+  const overlay = document.getElementById('login-overlay');
+  // Double-safe: both class and inline style
+  overlay.classList.add('show');
+  overlay.style.display = 'flex';
+  const pwInput = document.getElementById('password-input');
+  pwInput.value = '';
+  document.getElementById('strength-fill').style.width = '0%';
+  document.getElementById('strength-fill').style.background = '#444';
+  document.getElementById('strength-text').textContent = '';
+  document.getElementById('login-feedback').textContent = '';
+  document.getElementById('login-clue-display').textContent = '提示：密码格式为"名字+日期"，全小写';
+
+  // Multiple focus attempts for reliability
+  pwInput.focus();
+  setTimeout(() => pwInput.focus(), 100);
+  setTimeout(() => pwInput.focus(), 300);
+}
+
+function updateStrength() {
+  const pw = document.getElementById('password-input').value;
+  const bar = document.getElementById('strength-fill');
+  const txt = document.getElementById('strength-text');
+  const len = pw.length;
+
+  if (len === 0) { bar.style.width='0%'; bar.style.background='#444'; txt.textContent=''; return; }
+
+  let score = 0;
+  if (len >= 6) score++;
+  if (len >= 8) score++;
+  if (len >= 12) score++;
+  if (/[a-z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[^a-zA-Z0-9]/.test(pw)) score++;
+
+  let pct = Math.min(100, Math.round(score / 7 * 100));
+  if (len < 8) pct = Math.min(pct, 45);
+  else if (len < 12) pct = Math.min(pct, 75);
+  bar.style.width = pct + '%';
+
+  let color, msg;
+  if (len < 8) { color='#ff4444'; msg='⚠ 太短了，至少8位'; }
+  else if (pct < 55) { color='#ff9944'; msg='还可以更强：增加大小写/数字/符号'; }
+  else if (pct < 80) { color='#ffdd44'; msg='中等强度：长度还可以继续提升'; }
+  else { color='#44ff44'; msg='强密码：长度和字符类型都不错'; }
+  bar.style.background = color;
+  txt.textContent = msg;
+}
+
+function classifyPassword(pw) {
+  let types = 0;
+  if (/[a-z]/.test(pw)) types++;
+  if (/[A-Z]/.test(pw)) types++;
+  if (/[0-9]/.test(pw)) types++;
+  if (/[^a-zA-Z0-9]/.test(pw)) types++;
+
+  if (pw.length < 8 || types <= 1) return 'weak';
+  if (pw.length >= 8 && types >= 3) return 'strong';
+  return 'medium';
+}
+
+function tryLogin() {
+  initAudio();
+  const pw = document.getElementById('password-input').value.trim();
+  const correct = sceneData[1].correctPassword;
+  const fb = document.getElementById('login-feedback');
+
+  if (pw === correct) {
+    state.loginAttempts = 0;
+    fb.innerHTML = '<span style="color:#00ff41;">✅ 密码正确！系统已解锁！</span>';
+    sfxSuccess();
+    state.score = Math.min(100, state.score + 10);
+    setTimeout(() => {
+      var lo=document.getElementById('login-overlay');lo.classList.remove('show');lo.style.display='none';
+      completeLevel();
+    }, 1200);
+  } else if (pw.toLowerCase() === correct.toLowerCase() && pw !== correct) {
+    state.loginAttempts++;
+    fb.innerHTML = loginFailureText('⚠ 大小写不对哦...再看一眼便利贴的提示？');
+    sfxFail();
+    adjustScore(-8);
+  } else if (pw.includes('旺财') || pw.includes('1015')) {
+    state.loginAttempts++;
+    fb.innerHTML = loginFailureText('🤔 思路对了一半。再看看线索，想想完整格式？');
+    sfxFail();
+    adjustScore(-8);
+  } else {
+    state.loginAttempts++;
+    fb.innerHTML = loginFailureText('❌ 密码错误。去房间里多找找线索吧！');
+    sfxFail();
+    adjustScore(-8);
+  }
+}
+
+function loginFailureText(baseText) {
+  const attemptsLeft = Math.max(0, 3 - state.loginAttempts);
+  if (state.loginAttempts >= 3) {
+    return `<span style="color:#ffd93d;">${baseText}</span><br>
+      <span style="color:#ff6b6b;">密码尝试失败，安全指数 -8。</span><br>
+      <span style="color:#00d4ff;">系统遗留提示已暴露：密码是旺财名字的全小写拼音+旺财的生日日期</b>。输入它即可解锁。</span>`;
+  }
+  return `<span style="color:#ffd93d;">${baseText}</span><br>
+    <span style="color:#ff6b6b;">密码尝试失败，安全指数 -8。</span><br>
+    <span style="color:#777;">再错 ${attemptsLeft} 次，将自动解锁完整提示。</span>`;
+}
+
+// Close panels on overlay click
+document.getElementById('login-overlay')?.addEventListener('click', function(e) {
+  if (e.target === this) { this.classList.remove('show'); this.style.display = 'none'; }
+});
+
+// ============================================================
+// LEVEL 2 — EMAIL PANEL
+// ============================================================
+function emailCaseBrief() {
+  const insp = state.emailInspected;
+  if (!insp.rawChecked) return '案件目标：从邮件原始头中提取攻击源IP，再提交到下方溯源终端。';
+  if (!insp.whoisDone) return '已取得关键证据：来源IP 192.168.99.37。把它输入下方“攻击源溯源终端”。';
+  return '溯源完成：攻击源已锁定。';
+}
+
+function checkEmailCompletion() {
+  if (levelCompleting || state.emailInspected.completed) return true;
+  if (state.emailInspected.rawChecked && state.emailInspected.whoisDone) {
+    state.emailInspected.completed = true;
+    adjustScore(10);
+    setTimeout(() => {
+      var eo=document.getElementById('email-overlay');eo.classList.remove('show');eo.style.display='none';
+      completeLevel();
+    }, 1500);
+    return true;
+  }
+  return false;
+}
+
+function openEmailPanel() {
+  const body = document.getElementById('email-body');
+  const insp = state.emailInspected;
+
+  let rawClass = insp.rawChecked ? 'show' : '';
+  let rawContent = insp.rawChecked ?
+    `<span style="color:#777;">Received: from mail.evil.cn ([<span style="color:#ff6b6b;">192.168.99.37</span>])<br>
+    by smtp.bank-secure.com; Tue, 5 Mar 2024 14:23:11 +0800<br>
+    From: hacker@evil.cn<br>
+    Reply-To: hacker@evil.cn<br>
+    Message-ID: &lt;phish2024@evil.cn&gt;</span>` : '';
+
+  let senderExtra = insp.senderChecked ?
+    '<span style="color:#ff6b6b;font-size:13px;">⚠ 实际地址是 hacker@evil.cn，不是银行！</span>' : '';
+
+  let linkExtra = insp.linkChecked ?
+    '<span style="color:#ff6b6b;font-size:13px;">⚠ 链接实际指向 http://192.168.99.37/steal — 不是银行网站！</span>' : '';
+
+  const traceTerminal = `
+    <div class="trace-terminal">
+      <div class="trace-title">攻击源溯源终端</div>
+      <div class="trace-note">${insp.rawChecked
+        ? '输入从原始邮件头提取到的来源IP，提交后锁定攻击源。'
+        : '终端等待来源IP。先查看原始邮件头，找到 Received 记录中的 IP。'}</div>
+      <div class="trace-line">
+        <input id="whois-input" type="text" placeholder="${insp.rawChecked ? '输入来源IP' : '等待来源IP证据'}"
+          ${insp.rawChecked ? '' : 'disabled'}
+          onkeydown="if(event.key==='Enter')doWhois()">
+        <button onclick="event.stopPropagation();doWhois()" ${insp.rawChecked ? '' : 'disabled'}>提交</button>
+      </div>
+      <div id="whois-result"></div>
+    </div>`;
+
+  body.innerHTML = `
+    <div style="font-size:14px;color:var(--dim);margin-bottom:12px;">📧 收件箱 (4封) — 当前查看：可疑邮件</div>
+    <div class="case-brief">${emailCaseBrief()}</div>
+    <div class="email-field can-inspect" onclick="inspectEmail('sender')">
+      <div class="field-label">发件人</div>
+      <div class="field-value">中国商业银行 &lt;service@bank-secure.com&gt; ${senderExtra}</div>
+    </div>
+    <div class="email-field">
+      <div class="field-label">主题</div>
+      <div class="field-value">⚠ 紧急！您的账户出现异常登录，请立即验证！</div>
+    </div>
+    <div class="email-field" style="padding:12px;background:rgba(255,255,255,0.02);line-height:1.85;font-size:14px;">
+      尊敬的客户：<br><br>
+      我们检测到您的银行账户在异地异常登录。<br>
+      请立即点击下方链接验证身份，<br>
+      否则您的账户将在 <span style="color:#ff6b6b;">24小时内被冻结</span>！<br><br>
+      <span class="can-inspect" style="color:#00d4ff;text-decoration:underline;cursor:pointer;"
+        onclick="event.stopPropagation();inspectEmail('link')">https://www.bank-secure.com/verify</span>
+      ${linkExtra}
+    </div>
+    <button class="email-raw-btn" onclick="event.stopPropagation();inspectEmail('raw')">
+      ${insp.rawChecked ? '✓ 已查看原始邮件头' : '📋 查看原始邮件头'}
+    </button>
+    <div class="email-raw ${rawClass}">${rawContent}</div>
+    ${traceTerminal}
+  `;
+
+  const eOverlay = document.getElementById('email-overlay');
+  eOverlay.classList.add('show');
+  eOverlay.style.display = 'flex';
+}
+
+function inspectEmail(part) {
+  initAudio(); sfxCollect();
+  state.emailInspected[part + 'Checked'] = true;
+
+  if (part === 'raw') {
+    state.clues.push('线索：邮件原始头显示来源IP为 192.168.99.37');
+  }
+
+  updateNotebook();
+  openEmailPanel(); // refresh
+
+  // Check if all inspections done
+  checkEmailCompletion();
+}
+
+function doWhois() {
+  initAudio();
+  const input = document.getElementById('whois-input')?.value.trim();
+  const result = document.getElementById('whois-result');
+  if (!result) return;
+
+  if (!state.emailInspected.rawChecked) {
+    result.innerHTML = '<span style="color:#ffd93d;">终端还没有来源IP证据。先查看原始邮件头。</span>';
+    sfxFail();
+    return;
+  }
+
+  if (input === '192.168.99.37') {
+    result.innerHTML = `<span style="color:#00ff41;">
+    ✅ 攻击源提交成功<br>
+    来源IP: 192.168.99.37<br>
+    托管商: EvilHosting Ltd.<br>
+    关联账户: hacker@evil.cn<br>
+    状态: 已锁定恶意来源</span>`;
+    sfxSuccess();
+    state.emailInspected.whoisDone = true;
+    state.clues.push('线索：溯源终端确认攻击源 192.168.99.37');
+    updateNotebook();
+
+    checkEmailCompletion();
+  } else if (input === '') {
+    result.innerHTML = '<span style="color:#ffd93d;">请输入从原始邮件头得到的来源IP。</span>';
+    sfxFail();
+  } else {
+    adjustScore(-5);
+    result.innerHTML = '<span style="color:#ffd93d;">未命中攻击源。误报会浪费处置时间，安全指数 -5。请核对原始邮件头 Received 记录里的 IP。</span>';
+    sfxFail();
+  }
+}
+
+document.getElementById('email-overlay')?.addEventListener('click', function(e) {
+  if (e.target === this) { this.classList.remove('show'); this.style.display = 'none'; }
+});
+
+// ============================================================
+// LEVEL 3 — TERMINAL
+// ============================================================
+function openTerminal() {
+  const term = document.getElementById('terminal-panel');
+  const output = document.getElementById('term-output');
+  const hintArea = document.getElementById('term-hint-area');
+
+  // Build terminal output
+  let out = '<div style="color:#777;">服务器管理终端 v2.1 — 输入 help 查看命令</div>';
+  out += '<div style="color:#777;">──────────────────────────────────</div>';
+
+  state.terminalState.commands.forEach(cmd => {
+    out += `<div><span style="color:#00d4ff;">server-admin@firewall:~$</span> <span style="color:#fff;">${cmd.cmd}</span></div>`;
+    out += `<div style="color:#aaa;">${cmd.output}</div>`;
+  });
+
+  // Update hint
+  const ts = state.terminalState;
+  if (ts.firewallEnabled && ts.passwordChanged && ts.portsClosed.length >= 2) {
+    hintArea.innerHTML = '<span style="color:#00ff41;">✅ 所有安全措施已就绪！关闭终端即可完成任务。</span>';
+  } else if (ts.portsClosed.length >= 2 && ts.passwordChanged) {
+    hintArea.innerHTML = '💡 还有一步：输入 <b>firewall enable</b> 启用防火墙';
+  } else if (ts.portsClosed.length >= 2) {
+    hintArea.innerHTML = '💡 下一步：修改默认密码。输入 <b>passwd admin</b>';
+  } else if (ts.portsClosed.length >= 1) {
+    hintArea.innerHTML = '💡 还有不安全的端口。试试 <b>close 23</b> 或 <b>close 21</b>';
+  } else {
+    hintArea.innerHTML = '💡 输入 <b>help</b> 查看可用命令。先检查端口状态：<b>status</b>';
+  }
+
+  out += `<div class="term-input-line"><span class="term-prompt">server-admin@firewall:~$</span>
+    <input class="term-input" id="term-input" onkeydown="handleTerminalKey(event)" autofocus></div>`;
+
+  output.innerHTML = out;
+  const tOverlay = document.getElementById('terminal-overlay');
+  tOverlay.classList.add('show');
+  tOverlay.style.display = 'flex';
+
+  setTimeout(() => {
+    const inp = document.getElementById('term-input');
+    if (inp) inp.focus();
+  }, 200);
+}
+
+function checkTerminalCompletion() {
+  const ts = state.terminalState;
+  if (levelCompleting) return true;
+  if (ts.portsClosed.includes(23) && ts.portsClosed.includes(21) &&
+      ts.passwordChanged && ts.firewallEnabled) {
+    setTimeout(() => {
+      var to=document.getElementById('terminal-overlay');to.classList.remove('show');to.style.display='none';
+      completeLevel();
+    }, 2000);
+    return true;
+  }
+  return false;
+}
+
+function handleTerminalKey(e) {
+  if (e.key !== 'Enter') return;
+  const input = document.getElementById('term-input');
+  const cmd = input.value.trim().toLowerCase();
+  if (!cmd) return;
+
+  initAudio();
+  let output = '';
+  const ts = state.terminalState;
+
+  switch (cmd) {
+    case 'help':
+      output = `<span style="color:#ffd93d;">可用命令：</span><br>
+        status &nbsp;— 查看当前安全状态<br>
+        scan &nbsp;&nbsp;— 扫描开放端口<br>
+        close &lt;端口号&gt; — 关闭指定端口<br>
+        passwd &lt;用户名&gt; — 修改用户密码<br>
+        firewall enable — 启用防火墙<br>
+        clear — 清屏<br>
+        exit — 退出终端`;
+      break;
+
+    case 'status':
+    case 'scan':
+      const ports = [];
+      if (!ts.portsClosed.includes(23)) ports.push('<span style="color:#ff6b6b;">23 (Telnet) ⚠ 不安全</span>');
+      if (!ts.portsClosed.includes(21)) ports.push('<span style="color:#ff6b6b;">21 (FTP) ⚠ 不安全</span>');
+      ports.push('<span style="color:#00ff41;">22 (SSH) ✓</span>');
+      ports.push('<span style="color:#00ff41;">80 (HTTP) ✓</span>');
+      ports.push('<span style="color:#00ff41;">443 (HTTPS) ✓</span>');
+      output = `开放端口扫描：<br>${ports.join('<br>')}<br><br>
+        默认账户：admin / <span style="color:#ff6b6b;">admin</span> ⚠ 弱密码<br>
+        防火墙状态：${ts.firewallEnabled ? '<span style="color:#00ff41;">已启用</span>' : '<span style="color:#ff6b6b;">未启用 ⚠</span>'}`;
+      break;
+
+    case 'close 23':
+      if (ts.portsClosed.includes(23)) {
+        adjustScore(-2);
+        output = '<span style="color:#ffd93d;">端口 23 已经关闭了。重复操作造成审计噪声，安全指数 -2。</span>';
+        sfxFail();
+      } else {
+        ts.portsClosed.push(23);
+        output = '<span style="color:#00ff41;">✅ 已关闭端口 23 (Telnet)。Telnet 使用明文传输，极易被窃听。</span>';
+        state.score = Math.min(100, state.score + 5);
+        state.clues.push('已关闭 Telnet (端口23) — 明文协议不安全');
+        sfxSuccess();
+      }
+      break;
+
+    case 'close 21':
+      if (ts.portsClosed.includes(21)) {
+        adjustScore(-2);
+        output = '<span style="color:#ffd93d;">端口 21 已经关闭了。重复操作造成审计噪声，安全指数 -2。</span>';
+        sfxFail();
+      } else {
+        ts.portsClosed.push(21);
+        output = '<span style="color:#00ff41;">✅ 已关闭端口 21 (FTP)。FTP 同样使用明文传输，建议用 SFTP。</span>';
+        state.score = Math.min(100, state.score + 5);
+        state.clues.push('已关闭 FTP (端口21) — 改用安全的 SFTP');
+        sfxSuccess();
+      }
+      break;
+
+    case 'passwd admin':
+      output = `<span style="color:#ffd93d;">新密码：</span><input id="new-passwd" type="text"
+        style="background:#000;border:1px solid #333;color:var(--neon);font-family:var(--font-terminal);padding:4px;"
+        onkeydown="if(event.key==='Enter')confirmPasswd()">
+        <button onclick="confirmPasswd()" style="cursor:pointer;background:transparent;color:var(--neon);border:1px solid var(--neon);font-family:var(--font-pixel);font-size:12px;">确认修改</button>`;
+      break;
+
+    case 'firewall enable':
+      if (ts.firewallEnabled) {
+        adjustScore(-2);
+        output = '<span style="color:#ffd93d;">防火墙已经在运行中。重复变更配置，安全指数 -2。</span>';
+        sfxFail();
+      } else {
+        ts.firewallEnabled = true;
+        output = '<span style="color:#00ff41;">✅ 防火墙已启用。默认规则：拒绝所有入站连接，仅允许必要服务。</span>';
+        state.score = Math.min(100, state.score + 5);
+        state.clues.push('已启用防火墙 — 默认拒绝入站连接');
+        sfxSuccess();
+      }
+      break;
+
+    case 'clear':
+      state.terminalState.commands = [];
+      openTerminal();
+      return;
+
+    case 'exit':
+      document.getElementById('terminal-overlay').classList.remove('show');
+      document.getElementById('terminal-overlay').style.display = 'none';
+      return;
+
+    default:
+      if (cmd.startsWith('close ')) {
+        adjustScore(-5);
+        output = `<span style="color:#ffd93d;">端口操作错误: ${cmd}。只能关闭确认不安全的 23(Telnet) 和 21(FTP)，安全指数 -5。</span>`;
+      } else {
+        adjustScore(-3);
+        output = `<span style="color:#ffd93d;">未知命令: ${cmd}。误操作会留下风险窗口，安全指数 -3。输入 help 查看可用命令。</span>`;
+      }
+      sfxFail();
+  }
+
+  if (output) {
+    ts.commands.push({ cmd, output });
+    document.getElementById('bar-score').textContent = '🔒 安全指数: ' + state.score;
+    updateNotebook();
+    renderScene();
+
+    checkTerminalCompletion();
+  }
+
+  openTerminal(); // refresh terminal display
+}
+
+function confirmPasswd() {
+  initAudio();
+  const newPw = document.getElementById('new-passwd')?.value.trim();
+  if (!newPw) return;
+  if (newPw === 'admin') {
+    adjustScore(-20);
+    alert('不能继续使用默认密码！弱密码操作扣除 20 分，请设置一个新密码。');
+    sfxFail();
+    return;
+  }
+  state.terminalState.passwordChanged = true;
+  const strength = classifyPassword(newPw);
+  let penaltyText = '';
+  if (strength === 'weak') {
+    adjustScore(-20);
+    penaltyText = '<br><span style="color:#ff6b6b;">⚠ 新密码强度过弱，安全指数 -20。建议至少8位并混合多类字符。</span>';
+    sfxFail();
+  } else if (strength === 'medium') {
+    adjustScore(-10);
+    penaltyText = '<br><span style="color:#ffd93d;">⚠ 新密码强度中等，安全指数 -10。建议至少8位，并在小写/大写/数字/符号中满足任意3类。</span>';
+    sfxFail();
+  } else {
+    adjustScore(5);
+    penaltyText = '<br><span style="color:#00ff41;">✅ 新密码强度良好，安全指数 +5。</span>';
+    sfxSuccess();
+  }
+
+  // Replace the pending passwd command entry with the completion message
+  const cmds = state.terminalState.commands;
+  for (let i = cmds.length - 1; i >= 0; i--) {
+    if (cmds[i].cmd === 'passwd admin') {
+      cmds[i].output = '<span style="color:#00ff41;">✅ 密码已修改。旧密码 \'admin\' → 新密码已设置。默认密码是重大安全隐患！</span>' + penaltyText;
+      break;
+    }
+  }
+  state.clues.push('已修改默认密码 — 不使用弱密码和默认密码');
+  updateNotebook();
+  renderScene();
+  checkTerminalCompletion();
+  openTerminal();
+}
+
+document.getElementById('terminal-overlay')?.addEventListener('click', function(e) {
+  if (e.target === this) { this.classList.remove('show'); this.style.display = 'none'; }
+});
+
+// ============================================================
+// LEVEL TRANSITIONS
+// ============================================================
+let levelCompleting = false;
+function completeLevel() {
+  if (levelCompleting) return;
+  const lvl = state.currentLevel;
+  levelCompleting = true;
+  sfxComplete();
+
+  // Calculate stars
+  let stars;
+  if (state.score >= 90) stars = '⭐⭐⭐';
+  else if (state.score >= 80) stars = '⭐⭐';
+  else if (state.score >= 70) stars = '⭐';
+  else stars = '☆';
+
+  const titles = {
+    1: '任务一完成：密码破解',
+    2: '任务二完成：攻击追踪',
+    3: '任务三完成：服务器安全',
+  };
+
+  const knowledgeCards = {
+    1: {
+      title: '📚 安全知识卡片 — 密码安全',
+      items: [
+        '强密码四要素：长度(≥8位) + 大写 + 小写 + 数字 + 符号',
+        '不要使用个人信息（名字、生日、宠物名）作为密码',
+        '双重验证(2FA)可以在密码泄露后增加一层保护',
+        '不同平台使用不同密码，避免"一个密码通天下"',
+      ],
+    },
+    2: {
+      title: '📚 安全知识卡片 — 钓鱼识别',
+      items: [
+        '检查发件人实际地址，而非显示名称（显示名可以伪造）',
+        '鼠标悬停链接，查看真实URL是否与显示文字一致',
+        '警惕制造紧迫感的邮件（"24小时内"、"立即"、"账户将被冻结"）',
+        '查看邮件原始头可以追溯真实来源IP',
+        'WHOIS 工具可以查询IP/域名的注册信息，辅助追踪攻击者',
+      ],
+    },
+    3: {
+      title: '📚 安全知识卡片 — 服务器加固',
+      items: [
+        '关闭不必要的服务端口（如Telnet-23、FTP-21），缩小攻击面',
+        'Telnet 和 FTP 使用明文传输，应替换为 SSH 和 SFTP',
+        '修改所有默认密码，使用强密码策略',
+        '启用防火墙，采用"默认拒绝"策略，仅开放必要端口',
+        '最小权限原则：每个服务只获得完成工作所需的最小权限',
+      ],
+    },
+  };
+
+  document.getElementById('complete-title').textContent = titles[lvl];
+  document.getElementById('complete-stars').textContent = stars;
+  document.getElementById('complete-score').textContent = `安全指数: ${state.score}`;
+
+  const kc = knowledgeCards[lvl];
+  document.getElementById('knowledge-card').innerHTML = `
+    <h4>${kc.title}</h4>
+    <ul>${kc.items.map(i => `<li>${i}</li>`).join('')}</ul>`;
+
+  const nextBtn = document.getElementById('next-btn');
+  if (lvl >= 3) {
+    nextBtn.textContent = '🏆 查看总评';
+    nextBtn.onclick = showGameComplete;
+  } else {
+    nextBtn.textContent = '▶ 下一任务';
+    nextBtn.onclick = nextLevel;
+  }
+
+  document.getElementById('level-complete').style.display = 'flex';
+  if (!state.completedLevels.includes(lvl)) state.completedLevels.push(lvl);
+
+  // Particles
+  spawnParticles();
+}
+
+function nextLevel() {
+  document.getElementById('level-complete').style.display = 'none';
+  levelCompleting = false;
+  state.currentLevel++;
+  resetLevelState();
+  renderScene();
+  updateNotebook();
+}
+
+function showGameComplete() {
+  document.getElementById('level-complete').style.display = 'none';
+  let rank, color;
+  if (state.score >= 90) { rank = '🛡️ 网络安全守护者 · 大师级'; color = 'var(--gold)'; }
+  else if (state.score >= 80) { rank = '🔰 网络安全守护者 · 进阶'; color = 'var(--cyan)'; }
+  else if (state.score >= 70) { rank = '📖 网络安全守护者 · 潜力新星'; color = 'var(--neon)'; }
+  else { rank = '💡 继续训练：每次排错都会更接近真正的守护者'; color = 'var(--warn)'; }
+
+  document.getElementById('final-rank').innerHTML = `<span style="color:${color}">${rank}</span>`;
+  document.getElementById('final-score').textContent = `最终安全指数: ${state.score}`;
+  document.getElementById('game-complete').style.display = 'flex';
+
+  // Big particle celebration
+  spawnParticles(60);
+}
+
+function restartGame() {
+  document.getElementById('game-complete').style.display = 'none';
+  levelCompleting = false;
+  state.currentLevel = 1;
+  state.score = 100;
+  state.clues = [];
+  state.levelClues = {};
+  state.completedLevels = [];
+  state.emailInspected = {};
+  state.terminalState = { commands:[], portsClosed:[], passwordChanged:false, firewallEnabled:false };
+  renderScene();
+  updateNotebook();
+  document.getElementById('game-screen').style.display = 'flex';
+  document.getElementById('game-complete').style.display = 'none';
+}
+
+// ============================================================
+// PARTICLES
+// ============================================================
+function spawnParticles(count = 30) {
+  const canvas = document.getElementById('particles');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 1000; canvas.height = 700;
+  canvas.style.display = 'block';
+
+  const particles = [];
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: Math.random() * 1000, y: Math.random() * 700,
+      vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4 - 2,
+      life: 1, color: ['#00ff41','#ffd93d','#00d4ff','#ff6b6b'][Math.floor(Math.random()*4)],
+      size: Math.random() * 4 + 2,
+    });
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, 1000, 700);
+    let alive = false;
+    particles.forEach(p => {
+      if (p.life <= 0) return;
+      alive = true;
+      p.x += p.vx; p.y += p.vy;
+      p.vy += 0.05; // gravity
+      p.life -= 0.01;
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x, p.y, p.size, p.size);
+    });
+    ctx.globalAlpha = 1;
+    if (alive) requestAnimationFrame(animate);
+    else canvas.style.display = 'none';
+  }
+  animate();
+}
+
+// ============================================================
+// GAME LAUNCH
+// ============================================================
+function startGame(level) {
+  initAudio(); sfxClick();
+  levelCompleting = false;
+  state.currentLevel = level || 1;
+  state.score = 100;
+  state.clues = [];
+  state.levelClues = {};
+  state.completedLevels = [];
+  state.emailInspected = {};
+  state.terminalState = { commands:[], portsClosed:[], passwordChanged:false, firewallEnabled:false };
+
+  resetLevelState();
+  document.getElementById('start-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'flex';
+  renderScene();
+  updateNotebook();
+}
+
+// Event delegation for scene clicks
+document.getElementById('scene').addEventListener('click', function(e) {
+  const hotspot = e.target.closest('.hotspot');
+  if (hotspot) {
+    const itemId = hotspot.dataset.itemId;
+    if (itemId) clickItem(itemId);
+  }
+});
+
+// Render level select buttons
+function renderLevelSelect() {
+  const sel = document.getElementById('level-select');
+  sel.innerHTML = '';
+  [1,2,3].forEach(lvl => {
+    const unlocked = state.completedLevels.includes(lvl) || lvl === 1 || state.completedLevels.includes(lvl-1);
+    const done = state.completedLevels.includes(lvl);
+    const btn = document.createElement('button');
+    btn.textContent = `${done ? '★' : ''} 任务${'一二三'[lvl-1]}`;
+    btn.className = unlocked ? 'unlocked' : '';
+    if (unlocked) btn.onclick = () => startGame(lvl);
+    sel.appendChild(btn);
+  });
+}
+
+// Init
+renderScene();
+updateNotebook();
+renderLevelSelect();
+
+// Keyboard shortcut to close overlays
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.popup-overlay.show, .panel-overlay.show').forEach(el => { el.classList.remove('show'); el.style.display = 'none'; });
+  }
+});
+</script>
+</body>
+</html>
