@@ -363,8 +363,38 @@ body {
 
 /* ========== RESPONSIVE ========== */
 @media (max-width:1020px) {
-  #game { width:100vw; height:100vw; max-height:100vh; }
-  #notebook { width:220px; }
+  body {
+    align-items: center;
+    justify-content: center;
+  }
+  /* Scale the entire game canvas to fit, preserving internal 1000x700 coords */
+  #game {
+    width: 1000px;
+    height: 700px;
+    transform-origin: center center;
+    /* Scale = min(vw/1000, vh/700), with a little padding */
+    --scale-by-w: calc(100vw / 1000);
+    --scale-by-h: calc(100vh / 700);
+    --scale: min(var(--scale-by-w), var(--scale-by-h));
+    transform: scale(var(--scale));
+    /* Push game back to center after scaling */
+    margin: 0;
+  }
+  #notebook { width: 220px; }
+  .footer-mark { font-size: 10px; }
+}
+
+/* ---------- Phone (<768px) ---------- */
+@media (max-width: 767px) {
+  #game {
+    border-width: 2px;
+    box-shadow: 0 0 10px rgba(0,255,65,0.1);
+    /* Keep scaling, add padding for notches */
+    --scale-by-w: calc((100vw - 8px) / 1000);
+    --scale-by-h: calc((100vh - 8px) / 700);
+    --scale: min(var(--scale-by-w), var(--scale-by-h));
+    transform: scale(var(--scale));
+  }
 }
 </style>
 </head>
