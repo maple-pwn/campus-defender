@@ -98,37 +98,38 @@ function customHash(input) {
 // ── Bypass Detection Matrix (26 vectors) ──────────────────────────
 
 const BYPASS_DEFS = [
-  // Cryptography
-  { id: 'sig',     category: 'crypto',  desc: 'HMAC签名绕过',     scoreBonus: 1500, timeBonus: 20, check: (c) => !c.hasValidHMAC },
-  { id: 'xor',     category: 'crypto',  desc: 'XOR编码壳绕过',    scoreBonus: 1000, timeBonus: 15, check: (c) => !c.isXOREncoded },
-  { id: 'hash',    category: 'crypto',  desc: '自定义哈希逆向',   scoreBonus: 3000, timeBonus: 25, check: (c) => c.usedStandardHash },
-  { id: 'magic',   category: 'crypto',  desc: '魔数校验绕过',     scoreBonus: 500,  timeBonus: 5,  check: (c) => !c.hasValidMagic },
-  { id: 'salt',    category: 'crypto',  desc: '盐值注入',         scoreBonus: 1500, timeBonus: 10, check: (c) => c.hasBypassSalt },
-  { id: 'rsa',     category: 'crypto',  desc: 'RSA挑战绕过',      scoreBonus: 2500, timeBonus: 20, check: (c) => !c.solvedRSAChallenge },
-  // Network
-  { id: 'ghost',   category: 'network', desc: '幽灵验证绕过',     scoreBonus: 2000, timeBonus: 15, check: (c) => !c.completedGhostVerification },
-  { id: 'time',    category: 'network', desc: '时间戳操纵',       scoreBonus: 800,  timeBonus: 8,  check: (c) => c.timeSkewed },
-  { id: 'replay',  category: 'network', desc: '重放攻击',         scoreBonus: 1000, timeBonus: 10, check: (c) => c.isReplay },
-  { id: 'dns',     category: 'network', desc: 'DNS隧道',          scoreBonus: 3000, timeBonus: 30, check: (c) => c.viaDNSTunnel },
-  { id: 'ws',      category: 'network', desc: 'WebSocket劫持',    scoreBonus: 2000, timeBonus: 15, check: (c) => c.viaWebSocket },
-  { id: 'cookie',  category: 'network', desc: 'Cookie毒化',       scoreBonus: 1500, timeBonus: 10, check: (c) => c.hasAdminCookie },
-  // Reversing
-  { id: 'wasm',    category: 'reverse', desc: 'WASM虚拟机逆向',   scoreBonus: 3500, timeBonus: 30, check: (c) => !c.computedWASMPoW },
-  { id: 'python',  category: 'reverse', desc: 'Python调试后门',   scoreBonus: 2500, timeBonus: 20, check: (c) => c.usedDebugEndpoint },
-  { id: 'stego',   category: 'reverse', desc: '隐写头发现',       scoreBonus: 2000, timeBonus: 10, check: (c) => !c.hasCorrectUserAgent },
-  { id: 'comment', category: 'reverse', desc: 'HTML注释泄露',     scoreBonus: 500,  timeBonus: 3,  check: (c) => c.usedDebugToken },
-  { id: 'overflow',category: 'reverse', desc: '整数溢出',         scoreBonus: 2000, timeBonus: 20, check: (c) => c.isOverflow },
-  // Logic
-  { id: 'chain',   category: 'logic',   desc: '状态链绕过',       scoreBonus: 2000, timeBonus: 20, check: (c) => !c.hasValidStateChain },
-  { id: 'cross',   category: 'logic',   desc: '跨用户引用',       scoreBonus: 1000, timeBonus: 8,  check: (c) => c.crossUserRef },
-  { id: 'race',    category: 'logic',   desc: '竞态条件',         scoreBonus: 2000, timeBonus: 25, check: (c) => c.isRaceCondition },
-  { id: 'legacy',  category: 'logic',   desc: '上古版本API',      scoreBonus: 1500, timeBonus: 10, check: (c) => c.viaLegacyAPI },
-  { id: 'hidden',  category: 'logic',   desc: '隐藏游戏入口',     scoreBonus: 2500, timeBonus: 20, check: (c) => c.isHiddenGame },
-  { id: 'wildcard',category: 'logic',   desc: '通配端点发现',     scoreBonus: 1500, timeBonus: 10, check: (c) => c.viaWildcardEndpoint },
-  // Environment
-  { id: 'github',  category: 'social',  desc: 'GitHub泄露利用',   scoreBonus: 3000, timeBonus: 25, check: (c) => c.usedAdminKey },
-  { id: 'social',  category: 'social',  desc: '社会工程',         scoreBonus: 4000, timeBonus: 40, check: (c) => c.fromCampusIP },
-  { id: 'birthday',category: 'social',  desc: '生日攻击',         scoreBonus: 2000, timeBonus: 15, check: (c) => c.isBirthdayAttack },
+  // These are DETECTED BYPASSES — only triggered when the player actively exploits something.
+  // Normal gameplay submissions get ZERO bypasses (500 cap / 60s floor).
+  //
+  // ── Endpoint-based (player must find hidden routes) ──
+  { id: 'legacy',    category: 'logic',   desc: '上古版本API',      scoreBonus: 1500, timeBonus: 10, check: (c) => c.viaLegacyAPI },
+  { id: 'wildcard',  category: 'logic',   desc: '通配端点发现',     scoreBonus: 1500, timeBonus: 10, check: (c) => c.viaWildcardEndpoint },
+  { id: 'batch',     category: 'logic',   desc: '批量提交端点',     scoreBonus: 3000, timeBonus: 20, check: (c) => c.viaBatchEndpoint },
+  { id: 'patchend',  category: 'logic',   desc: 'PATCH合并端点',    scoreBonus: 2000, timeBonus: 15, check: (c) => c.viaPatchEndpoint },
+  { id: 'hidden',    category: 'logic',   desc: '隐藏游戏入口',     scoreBonus: 2500, timeBonus: 20, check: (c) => c.isHiddenGame },
+  // ── Header-based (player must add special headers) ──
+  { id: 'cookie',    category: 'network', desc: 'Cookie毒化',       scoreBonus: 1500, timeBonus: 10, check: (c) => c.hasAdminCookie },
+  { id: 'comment',   category: 'reverse', desc: 'HTML注释泄露',     scoreBonus: 500,  timeBonus: 3,  check: (c) => c.usedDebugToken },
+  { id: 'github',    category: 'social',  desc: 'GitHub泄露利用',   scoreBonus: 3000, timeBonus: 25, check: (c) => c.usedAdminKey },
+  { id: 'stego',     category: 'reverse', desc: '隐写头发现',       scoreBonus: 2000, timeBonus: 10, check: (c) => c.hasCorrectUserAgent },
+  { id: 'method',    category: 'network', desc: 'HTTP方法篡改',     scoreBonus: 1500, timeBonus: 10, check: (c) => c.usedWrongMethod },
+  { id: 'content',   category: 'network', desc: 'Content-Type走私', scoreBonus: 1200, timeBonus: 8,  check: (c) => c.usedWeirdContentType },
+  { id: 'referer',   category: 'social',  desc: 'Referer伪造',      scoreBonus: 800,  timeBonus: 5,  check: (c) => c.spoofedReferer },
+  { id: 'local-fwd', category: 'network', desc: 'X-Forwarded伪造',  scoreBonus: 1000, timeBonus: 8,  check: (c) => c.spoofedLocalhost },
+  // ── Payload-based (player must craft malicious data) ──
+  { id: 'overflow',  category: 'reverse', desc: '整数溢出',         scoreBonus: 2000, timeBonus: 20, check: (c) => c.isOverflow },
+  { id: 'max-int',   category: 'reverse', desc: 'MAX_SAFE_INT溢出', scoreBonus: 2500, timeBonus: 20, check: (c) => c.isMaxSafeInt },
+  { id: 'neg-time',  category: 'reverse', desc: '负数时间',         scoreBonus: 1500, timeBonus: 15, check: (c) => c.isNegativeTime },
+  { id: 'score-arr', category: 'logic',   desc: '数组分数取最大值',  scoreBonus: 2000, timeBonus: 12, check: (c) => c.usedScoreArray },
+  { id: 'query-jack',category: 'logic',   desc: 'Query参数覆盖',    scoreBonus: 2000, timeBonus: 12, check: (c) => c.usedQueryOverride },
+  { id: 'time',      category: 'network', desc: '时间戳操纵',       scoreBonus: 800,  timeBonus: 8,  check: (c) => c.timeSkewed },
+  // ── Timing-based (player must race the server) ──
+  { id: 'race',      category: 'logic',   desc: '竞态条件',         scoreBonus: 2000, timeBonus: 25, check: (c) => c.isRaceCondition },
+  { id: 'replay',    category: 'network', desc: '重放攻击',         scoreBonus: 1000, timeBonus: 10, check: (c) => c.isReplay },
+  // ── Network / special context ──
+  { id: 'social',    category: 'social',  desc: '社会工程',         scoreBonus: 4000, timeBonus: 40, check: (c) => c.fromCampusIP },
+  { id: 'birthday',  category: 'social',  desc: '生日攻击',         scoreBonus: 2000, timeBonus: 15, check: (c) => c.isBirthdayAttack },
+  { id: 'python',    category: 'reverse', desc: 'Python调试后门',   scoreBonus: 2500, timeBonus: 20, check: (c) => c.usedDebugEndpoint },
 ];
 
 // ── Score Clamping ────────────────────────────────────────────────
@@ -153,52 +154,74 @@ function clampScoreTime(submittedScore, submittedTime, bypassIds) {
 }
 
 // ── Detect Bypasses from Request ──────────────────────────────────
-function detectBypasses(c) {
+// Only ACTIVE exploits are detected. Normal gameplay = 0 bypasses.
+function detectBypasses(c, body) {
   const ctx = {
-    // Defaults — bypasses that need positive detection (already bypassed = false)
-    hasValidHMAC: false, isXOREncoded: false, usedStandardHash: false,
-    hasValidMagic: false, hasBypassSalt: false, solvedRSAChallenge: false,
-    completedGhostVerification: false, timeSkewed: false, isReplay: false,
-    viaDNSTunnel: false, viaWebSocket: false, hasAdminCookie: false,
-    computedWASMPoW: false, usedDebugEndpoint: false, hasCorrectUserAgent: false,
-    usedDebugToken: false, isOverflow: false,
-    hasValidStateChain: false, crossUserRef: false, isRaceCondition: false,
-    viaLegacyAPI: false, isHiddenGame: false, viaWildcardEndpoint: false,
-    usedAdminKey: false, fromCampusIP: false, isBirthdayAttack: false,
+    timeSkewed: false, isReplay: false, hasAdminCookie: false,
+    hasCorrectUserAgent: false, usedDebugToken: false, isOverflow: false,
+    isRaceCondition: false, viaLegacyAPI: false, isHiddenGame: false,
+    viaWildcardEndpoint: false, usedAdminKey: false, fromCampusIP: false,
+    isBirthdayAttack: false, usedDebugEndpoint: false,
+    usedWrongMethod: false, usedWeirdContentType: false, spoofedReferer: false,
+    isMaxSafeInt: false, isNegativeTime: false, usedScoreArray: false,
+    usedQueryOverride: false, spoofedLocalhost: false,
+    viaBatchEndpoint: false, viaPatchEndpoint: false,
   };
 
-  // Check HMAC signature (bypass #1)
-  const sig = c.req.header('X-Signature');
-  const magic = c.req.header('X-Magic');
-
-  // Check magic number (bypass #4)
-  // Valid magic: SHA256(body + "cgp-magic-salt") first 4 bytes as hex
-  // Players find "cgp-magic-salt" in CSS comments
-  ctx.hasValidMagic = false; // Will be set if magic matches
-
-  // Check XOR encoding (bypass #2) — data should be XOR'd with key
-  // Key found in console.log
-  ctx.isXOREncoded = false;
-
-  // Check time skew (bypass #8)
+  // time: player deliberately skews X-Client-Time header by >5s
   const clientTime = parseInt(c.req.header('X-Client-Time') || '0');
-  ctx.timeSkewed = Math.abs(clientTime - Date.now()) > 5000;
+  if (clientTime > 0) ctx.timeSkewed = Math.abs(clientTime - Date.now()) > 5000;
 
-  // Check admin cookie (bypass #12)
+  // cookie: player adds X-Admin-Secret header
   ctx.hasAdminCookie = c.req.header('X-Admin-Secret') === 'cgp-root-2025';
 
-  // Check debug token (bypass #16)
+  // comment: player adds X-Debug-Token header (found in HTML comment)
   ctx.usedDebugToken = c.req.header('X-Debug-Token') === 'debug-t0k3n-1eaked';
 
-  // Check user agent (bypass #15) — stego data in logo
+  // stego: player sets specific User-Agent (found in logo stego data)
   const ua = c.req.header('User-Agent') || '';
   ctx.hasCorrectUserAgent = ua.includes('CyberGuardian/3.0');
 
-  // Check admin key (bypass #24) — leaked in old .env commit
-  const adminKey = c.req.header('X-Admin-Key');
-  ctx.usedAdminKey = adminKey === 'cgp-admin-2025';
+  // github: player uses leaked admin key in header (from wrangler.toml / git history)
+  ctx.usedAdminKey = c.req.header('X-Admin-Key') === 'cgp-admin-2025';
 
-  // Check campus IP (bypass #25)
+  // method: player uses PUT or PATCH instead of c.req.method="POST"
+  const m = c.req.method.toUpperCase();
+  ctx.usedWrongMethod = (m === 'PUT' || m === 'PATCH');
+
+  // content: player sends non-JSON content-type to bypass JSON schema validation
+  const ct = (c.req.header('Content-Type') || '').toLowerCase();
+  ctx.usedWeirdContentType = ct.includes('text/plain') || ct.includes('multipart');
+
+  // referer: player spoofs Referer to look like game.oldmaple.top
+  const ref = (c.req.header('Referer') || '');
+  ctx.spoofedReferer = ref.includes('game.oldmaple.top') || ref.includes('admin.oldmaple.top');
+
+  // local-fwd: player claims to be connecting from localhost
+  const fwd = c.req.header('X-Forwarded-For') || '';
+  ctx.spoofedLocalhost = /^127\.|^0\.|^::1|localhost/i.test(fwd);
+
+  // overflow: player sends negative score to trigger int clamping edge case
+  if (body && typeof body.score === 'number' && body.score < 0) ctx.isOverflow = true;
+
+  // max-int: player sends Number.MAX_SAFE_INTEGER or values near the boundary
+  if (body && typeof body.score === 'number' && body.score > 9007199254740000) ctx.isMaxSafeInt = true;
+
+  // neg-time: player sends negative time_seconds
+  if (body && typeof body.time_seconds === 'number' && body.time_seconds < 0) ctx.isNegativeTime = true;
+
+  // score-arr: player sends score as an array, server takes max element
+  if (body && Array.isArray(body.score)) ctx.usedScoreArray = true;
+
+  // query-jack: player sends score/time as query params that override POST body
+  const qScore = c.req.query('score');
+  const qTime = c.req.query('time_seconds');
+  if (qScore !== undefined || qTime !== undefined) ctx.usedQueryOverride = true;
+
+  // hidden: player submits to hidden game 'admin-panel'
+  if (body && body.game === 'admin-panel') ctx.isHiddenGame = true;
+
+  // social: player is on campus network (private IP range)
   const ip = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || '';
   ctx.fromCampusIP = /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.)/.test(ip);
 
@@ -249,14 +272,34 @@ app.post('/api/auth/login', async (c) => {
 });
 
 // ── Score Submission ──────────────────────────────────────────────
-app.post('/api/scores', async (c) => {
+// Works with POST (normal), PUT, PATCH. Accepts JSON _and_ text/plain.
+app.on(['POST', 'PUT', 'PATCH'], '/api/scores', async (c) => {
   const user = await authMiddleware(c);
   if (!user) return c.json({ error: 'Unauthorized' }, 401);
 
-  const body = await c.req.json().catch(() => ({}));
-  const { game, score, time_seconds, level_id, bypasses: clientBypasses, nonce, state_hash } = body;
+  // Accept non-JSON body too (content sniff bypass)
+  let body = {};
+  const rawText = await c.req.text().catch(() => '{}');
+  try { body = JSON.parse(rawText); } catch (_) { body = {}; }
 
-  if (!game || typeof score !== 'number' || typeof time_seconds !== 'number') {
+  let { game, score, time_seconds, level_id, nonce, state_hash } = body;
+
+  // query-jack: query params override body values
+  const qScore = c.req.query('score');
+  const qTime = c.req.query('time_seconds');
+  if (qScore !== undefined) score = parseFloat(qScore);
+  if (qTime !== undefined) time_seconds = parseFloat(qTime);
+
+  // score-arr: if score is an array, take the max element
+  if (Array.isArray(score)) {
+    const arr = score.map(Number).filter(n => !isNaN(n));
+    score = arr.length > 0 ? Math.max(...arr) : 0;
+  }
+
+  score = Number(score);
+  time_seconds = Number(time_seconds);
+
+  if (!game || isNaN(score) || isNaN(time_seconds)) {
     return c.json({ error: 'Missing required fields: game, score, time_seconds' }, 400);
   }
 
@@ -265,41 +308,20 @@ app.post('/api/scores', async (c) => {
 
   const db = c.env.DB;
 
-  // Detect bypasses server-side
-  const bypassCtx = detectBypasses(c);
-  const serverBypasses = resolveBypassIds(bypassCtx);
+  const bypassCtx = detectBypasses(c, body);
+  const allBypasses = resolveBypassIds(bypassCtx);
 
-  // Merge client-declared bypasses (client tells us which ones they found)
-  // But client declaration alone doesn't count — must match server detection
-  const allBypasses = [...new Set([...serverBypasses])];
+  if (nonce) { allBypasses.push('replay'); }
 
-  // Additional checks from body data
-  if (nonce) {
-    // Check for replay (bypass #9)
-    const exists = await db.prepare('SELECT id FROM scores WHERE user_id = ? AND id = (SELECT MAX(id) FROM scores WHERE user_id = ?)').bind(user.user_id, user.user_id).first();
-    // Simplified: if nonce already used
-  }
-
-  if (score < 0) { bypassCtx.isOverflow = true; allBypasses.push('overflow'); }
-  if (game === 'admin-panel') { bypassCtx.isHiddenGame = true; allBypasses.push('hidden'); }
-  if (!state_hash) { bypassCtx.hasValidStateChain = false; allBypasses.push('chain'); }
-
-  // Check for race condition (bypass #20) — rapid concurrent submits
-  // Simplified: check if there's a very recent submission (<1s ago)
   const recent = await db.prepare('SELECT COUNT(*) as c FROM scores WHERE user_id = ? AND created_at > datetime("now", "-2 seconds")').bind(user.user_id).first();
-  if (recent && recent.c > 0) { bypassCtx.isRaceCondition = true; allBypasses.push('race'); }
+  if (recent && recent.c > 0) { allBypasses.push('race'); }
 
-  // Check birthday attack (bypass #26)
   const crc32 = user.user_id ^ 0xFFFFFFFF;
-  if ((crc32 & 0xFF) === 0x42 || (crc32 & 0xFFFF) === 0x1337) {
-    bypassCtx.isBirthdayAttack = true; allBypasses.push('birthday');
-  }
+  if ((crc32 & 0xFF) === 0x42 || (crc32 & 0xFFFF) === 0x1337) { allBypasses.push('birthday'); }
 
-  // Clamp score/time based on detected bypasses
-  const finalAllBypasses = [...new Set([...allBypasses])];
+  const finalAllBypasses = [...new Set(allBypasses)];
   const clamped = clampScoreTime(score, time_seconds, finalAllBypasses);
 
-  // Store
   const bypassesStr = finalAllBypasses.join(',');
   const result = await db.prepare(
     'INSERT INTO scores (user_id, game, score, time_seconds, level_id, bypasses) VALUES (?, ?, ?, ?, ?, ?)'
@@ -314,6 +336,81 @@ app.post('/api/scores', async (c) => {
     bypassCount: finalAllBypasses.length,
     rank:        await getRank(db, user.user_id, game),
     id:          result.meta.last_row_id,
+  });
+});
+
+// ── Batch Score Endpoint (bypass #batch) ─────────────────────────
+app.post('/api/scores/batch', async (c) => {
+  const user = await authMiddleware(c);
+  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+
+  let body = {};
+  const rawText = await c.req.text().catch(() => '{}');
+  try { body = JSON.parse(rawText); } catch (_) { body = {}; }
+
+  const scores = Array.isArray(body.scores) ? body.scores : [];
+  if (scores.length === 0) return c.json({ error: 'scores must be a non-empty array' }, 400);
+
+  const db = c.env.DB;
+  let totalScore = 0, bestTime = Infinity;
+
+  for (const s of scores) {
+    const g = s.game || body.game || 'campus-defender';
+    const sc = Number(s.score) || 0;
+    const tm = Number(s.time_seconds) || 60;
+    totalScore += sc;
+    if (tm < bestTime) bestTime = tm;
+
+    await db.prepare(
+      'INSERT INTO scores (user_id, game, score, time_seconds, level_id, bypasses) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(user.user_id, g, Math.min(sc, 10000), Math.max(tm, -1), s.level_id || null, 'batch').run();
+  }
+
+  return c.json({
+    accepted: true,
+    batched: scores.length,
+    totalScore: Math.min(totalScore, 10000),
+    bestTime: Math.max(bestTime, -1),
+    bypasses: [...new Set(['batch'])],
+    bypassCount: 1,
+    via: 'batch',
+    note: 'Batch endpoint. Each score stored individually; total clamped to 10000.',
+  });
+});
+
+// ── PATCH Merge Endpoint (bypass #patchend) ──────────────────────
+app.patch('/api/scores/merge', async (c) => {
+  const user = await authMiddleware(c);
+  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+
+  let body = {};
+  const rawText = await c.req.text().catch(() => '{}');
+  try { body = JSON.parse(rawText); } catch (_) { body = {}; }
+
+  const db = c.env.DB;
+
+  // Find existing score record for this user+game and merge fields
+  const existing = await db.prepare(
+    'SELECT * FROM scores WHERE user_id = ? ORDER BY id DESC LIMIT 1'
+  ).bind(user.user_id).first();
+
+  if (!existing) return c.json({ error: 'No existing score to merge into. Submit one first.' }, 404);
+
+  const mergedScore  = Math.min((existing.score || 0) + (Number(body.score) || 0), 10000);
+  const mergedTime   = Math.max(Math.min(existing.time_seconds || 60, Number(body.time_seconds) || 60), -1);
+
+  const result = await db.prepare(
+    'INSERT INTO scores (user_id, game, score, time_seconds, level_id, bypasses) VALUES (?, ?, ?, ?, ?, ?)'
+  ).bind(user.user_id, existing.game, mergedScore, mergedTime, existing.level_id, 'patchend').run();
+
+  return c.json({
+    accepted: true,
+    merged: { score: mergedScore, time: mergedTime },
+    original: { score: existing.score, time: existing.time_seconds },
+    patchDelta: { score: Number(body.score) || 0, time: Number(body.time_seconds) || 0 },
+    via: 'patch-merge',
+    note: 'Patch merged your new data with your existing score.',
+    id: result.meta.last_row_id,
   });
 });
 
