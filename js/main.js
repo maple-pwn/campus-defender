@@ -164,6 +164,14 @@ const Game = {
       if (typeof AudioFX !== 'undefined') AudioFX.play('success');
       return;
     }
+
+    if (cmd === 'pwnme') {
+      Game.handlePwnmeCommand(parsed.args);
+      Terminal.clearInput();
+      Terminal.focus();
+      if (typeof AudioFX !== 'undefined') AudioFX.play('success');
+      return;
+    }
     // ---- End free mode commands ----
 
     var handler = CommandRegistry.get(parsed.command);
@@ -451,6 +459,43 @@ const Game = {
       return;
     }
 
+    Game.loadLevel(level.chapter, level.index);
+  },
+
+  /** Handle the 'pwnme' command — jump to any level, no restrictions. */
+  handlePwnmeCommand: function (args) {
+    if (!args || args.length < 1) {
+      // No args: list ALL levels
+      Terminal.printSystem('⚡ PWNME · 全关卡跳转 ⚡');
+      Terminal.printInfo('');
+      var chapters = (typeof LEVELS !== 'undefined' && LEVELS.CHAPTERS) ? LEVELS.CHAPTERS : [];
+      for (var c = 0; c < chapters.length; c++) {
+        var ch = chapters[c];
+        var unlocked = GameState.isCommandUnlocked('scan') || ch.unlockCommands.length > 0;
+        var status = unlocked ? '✅' : '🔒';
+        Terminal.printSystem(status + ' [第' + ch.id + '章] ' + ch.name);
+        for (var l = 0; l < ch.levels.length; l++) {
+          var lid = ch.levels[l];
+          var level = getLevelById(lid);
+          if (!level) continue;
+          var isCompleted = GameState._data.completedLevels.indexOf(lid) !== -1;
+          var marker = isCompleted ? '✔' : '☐';
+          Terminal.printInfo('    ' + marker + ' ' + lid + ' — ' + level.title + (level.isBoss ? ' [BOSS]' : ''));
+        }
+      }
+      Terminal.printSystem('用法: pwnme <关卡ID>，例如 pwnme ch3-2');
+      Terminal.printSystem('⚠️ 这是后门命令，跳转不保存进度');
+      return;
+    }
+
+    var levelId = args[0].toLowerCase();
+    var level = getLevelById(levelId);
+    if (!level) {
+      Terminal.printError('关卡 ' + levelId + ' 不存在。输入 pwnme 查看所有关卡。');
+      return;
+    }
+
+    Terminal.printSystem('⚡ 后门启动！跳转至 ' + levelId + ' — ' + level.title);
     Game.loadLevel(level.chapter, level.index);
   },
 
