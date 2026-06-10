@@ -113,6 +113,17 @@
       color: #444;
       letter-spacing: 1px;
     }
+    #watermark {
+      position: fixed;
+      bottom: 12px;
+      right: 16px;
+      font-family: 'Courier New', 'Consolas', monospace;
+      font-size: 13px;
+      color: rgba(224,224,224,0.45);
+      letter-spacing: 2px;
+      pointer-events: none;
+      z-index: 500;
+    }
   </style>
 </head>
 <body>
@@ -141,5 +152,8 @@
     </div>
 
   </div>
+
+  <!-- Bottom-right watermark -->
+  <div id="watermark">武汉大学国家网络安全学院</div>
 </body>
 </html>
