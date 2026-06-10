@@ -362,39 +362,11 @@ body {
 }
 
 /* ========== RESPONSIVE ========== */
-@media (max-width:1020px) {
-  body {
-    align-items: center;
-    justify-content: center;
-  }
-  /* Scale the entire game canvas to fit, preserving internal 1000x700 coords */
-  #game {
-    width: 1000px;
-    height: 700px;
-    transform-origin: center center;
-    /* Scale = min(vw/1000, vh/700), with a little padding */
-    --scale-by-w: calc(100vw / 1000);
-    --scale-by-h: calc(100vh / 700);
-    --scale: min(var(--scale-by-w), var(--scale-by-h));
-    transform: scale(var(--scale));
-    /* Push game back to center after scaling */
-    margin: 0;
-  }
+/* Scale handled by JS (see end of <script>). This is the fallback. */
+@media (max-width: 1100px), (max-height: 750px) {
+  body { overflow: hidden; }
   #notebook { width: 220px; }
   .footer-mark { font-size: 10px; }
-}
-
-/* ---------- Phone (<768px) ---------- */
-@media (max-width: 767px) {
-  #game {
-    border-width: 2px;
-    box-shadow: 0 0 10px rgba(0,255,65,0.1);
-    /* Keep scaling, add padding for notches */
-    --scale-by-w: calc((100vw - 8px) / 1000);
-    --scale-by-h: calc((100vh - 8px) / 700);
-    --scale: min(var(--scale-by-w), var(--scale-by-h));
-    transform: scale(var(--scale));
-  }
 }
 </style>
 </head>
@@ -1490,6 +1462,41 @@ document.addEventListener('keydown', function(e) {
     document.querySelectorAll('.popup-overlay.show, .panel-overlay.show').forEach(el => { el.classList.remove('show'); el.style.display = 'none'; });
   }
 });
+
+// Responsive scaling: keep 1000x700 game canvas fitting in any viewport
+(function() {
+  var GAME_W = 1000, GAME_H = 700;
+  var game = document.getElementById('game');
+
+  function rescale() {
+    var vw = window.innerWidth;
+    var vh = window.innerHeight;
+    var scale = Math.min(vw / GAME_W, vh / GAME_H);
+    // Only scale down (don't upscale past 1.0)
+    if (scale >= 1) {
+      game.style.transform = '';
+      game.style.position = '';
+      game.style.top = '';
+      game.style.left = '';
+      game.style.marginLeft = '';
+      game.style.marginTop = '';
+      return;
+    }
+    game.style.position = 'fixed';
+    game.style.top = '50%';
+    game.style.left = '50%';
+    game.style.width = GAME_W + 'px';
+    game.style.height = GAME_H + 'px';
+    game.style.marginLeft = -(GAME_W / 2) + 'px';
+    game.style.marginTop = -(GAME_H / 2) + 'px';
+    game.style.transform = 'scale(' + scale + ')';
+    game.style.transformOrigin = '0 0';
+  }
+
+  rescale();
+  window.addEventListener('resize', rescale);
+  window.addEventListener('orientationchange', function() { setTimeout(rescale, 100); });
+})();
 </script>
 </body>
 </html>
