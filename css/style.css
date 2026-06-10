@@ -405,6 +405,13 @@ html, body {
   color: var(--accent);
   text-shadow: 0 0 6px var(--accent-glow);
 }
+.back-link.overlay-back {
+  position: absolute;
+  top: 14px;
+  left: 20px;
+  font-size: 13px;
+}
+
 
 .header-title {
   font-size: 18px;
