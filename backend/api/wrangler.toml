@@ -1,0 +1,13 @@
+name = "campus-defender-api"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+account_id = "022e367c29830bfab9dfe45df4b11c9d"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "campus-db"
+database_id = "0daebfe2-6c83-4aff-81d7-8e731ad4a616"
+
+[vars]
+JWT_SECRET = "cgp-jwt-secret-change-in-production"
+ADMIN_SECRET = "cgp-admin-2025"

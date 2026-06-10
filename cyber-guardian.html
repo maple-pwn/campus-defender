@@ -362,7 +362,6 @@ body {
 }
 
 /* ========== RESPONSIVE ========== */
-/* Scale handled by JS (see end of <script>). This is the fallback. */
 @media (max-width: 1100px), (max-height: 750px) {
   body { overflow: hidden; }
   #notebook { width: 220px; }
@@ -472,6 +471,7 @@ body {
   <canvas id="particles"></canvas>
 </div>
 
+<script src="js/api.js"></script>
 <script>
 // ============================================================
 // AUDIO ENGINE — 8-bit pixel sounds
@@ -1349,6 +1349,17 @@ function showGameComplete() {
 
   // Big particle celebration
   spawnParticles(60);
+
+  // Submit score to leaderboard API (fire-and-forget)
+  if (typeof API !== 'undefined' && API.isLoggedIn()) {
+    var cgScore = state.score * 10; // Scale 0-100 to 0-1000 for leaderboard
+    var cgTime = Math.round((Date.now() - state._startTime) / 1000) || 30;
+    API.submitScore('cyber-guardian', cgScore, cgTime, 'level' + state.currentLevel).then(function(res) {
+      if (res && res.accepted) {
+        console.log('Score uploaded: #' + (res.rank || '?') + ' with ' + (res.bypassCount || 0) + ' bypasses');
+      }
+    }).catch(function() { /* silent */ });
+  }
 }
 
 function restartGame() {
@@ -1411,6 +1422,7 @@ function spawnParticles(count = 30) {
 // ============================================================
 function startGame(level) {
   initAudio(); sfxClick();
+  state._startTime = Date.now();
   levelCompleting = false;
   state.currentLevel = level || 1;
   state.score = 100;
@@ -1463,34 +1475,34 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-// Responsive scaling: keep 1000x700 game canvas fitting in any viewport
+// Responsive scaling: zoom the game canvas to fit small screens
 (function() {
   var GAME_W = 1000, GAME_H = 700;
-  var game = document.getElementById('game');
 
   function rescale() {
-    var vw = window.innerWidth;
-    var vh = window.innerHeight;
-    var scale = Math.min(vw / GAME_W, vh / GAME_H);
-    // Only scale down (don't upscale past 1.0)
-    if (scale >= 1) {
-      game.style.transform = '';
-      game.style.position = '';
-      game.style.top = '';
-      game.style.left = '';
-      game.style.marginLeft = '';
-      game.style.marginTop = '';
-      return;
-    }
-    game.style.position = 'fixed';
-    game.style.top = '50%';
-    game.style.left = '50%';
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var s = Math.min(vw / GAME_W, vh / GAME_H);
+    if (s >= 1) return; // desktop: no scaling needed
+
+    // Scale the body itself so everything inside #game scales together
+    // body is flex-centered in the CSS reset
+    document.body.style.overflow = 'hidden';
+    document.body.style.display = 'flex';
+    document.body.style.justifyContent = 'center';
+    document.body.style.alignItems = 'flex-start';
+
+    var game = document.getElementById('game');
     game.style.width = GAME_W + 'px';
     game.style.height = GAME_H + 'px';
-    game.style.marginLeft = -(GAME_W / 2) + 'px';
-    game.style.marginTop = -(GAME_H / 2) + 'px';
-    game.style.transform = 'scale(' + scale + ')';
-    game.style.transformOrigin = '0 0';
+    game.style.flexShrink = '0';
+    game.style.transformOrigin = 'top center';
+    game.style.transform = 'scale(' + s + ')';
+    // After scaling, the visual height is GAME_H * s. We need to push
+    // content down by (vh - GAME_H*s)/2 to visually center it.
+    // But actually transform-origin top center already handles horizontal
+    // centering via flex. For vertical, we add margin-top.
+    var visualH = GAME_H * s;
+    game.style.marginTop = Math.max(0, (vh - visualH) / 2) + 'px';
   }
 
   rescale();

@@ -91,6 +91,7 @@ const Game = {
     this._stuckCounter = 0;
 
     GameState.startLevel(chapter, index);
+    GameState._levelStartTime = Date.now();
 
     this._resetIdleTimer(data);
 
@@ -364,6 +365,21 @@ const Game = {
     Terminal.printSuccess('✅ 任务完成！获得 +' + score + ' 分！');
     if (isBoss && badge) {
       Terminal.printSuccess('🏆 获得成就: ' + badge);
+    }
+
+    // Submit score to leaderboard API (async, fire-and-forget)
+    var self = this;
+    if (typeof API !== 'undefined' && API.isLoggedIn()) {
+      var cumulativeScore = GameState._data.score;
+      var elapsed = Math.round((Date.now() - (GameState._levelStartTime || Date.now())) / 1000);
+      var lid = levelId;
+      API.submitScore('campus-defender', cumulativeScore, elapsed, lid).then(function(res) {
+        if (res && res.accepted) {
+          Terminal.printInfo('📡 分数已上传 · 排名: #' + (res.rank || '?' ) + ' · 漏洞: ' + (res.bypassCount || 0));
+        }
+      }).catch(function() {
+        // Silent fail — API might not be reachable
+      });
     }
 
     // Show a continue button in the command bar instead of auto-popup
