@@ -76,6 +76,19 @@ body {
 #start-screen .level-sel button.unlocked:hover { background:var(--cyan); color:#000; }
 
 /* ========== TOP BAR ========== */
+
+#top-bar .back-link {
+  color: var(--dim);
+  text-decoration: none;
+  font-size: 13px;
+  margin-right: 10px;
+  transition: color 0.2s;
+}
+#top-bar .back-link:hover {
+  color: var(--neon);
+  text-shadow: 0 0 6px var(--neon);
+}
+
 #top-bar {
   height:52px; background:var(--bg2); border-bottom:2px solid #333;
   display:flex; align-items:center; padding:0 16px; gap:16px; flex-shrink:0;
@@ -374,6 +387,7 @@ body {
   <!-- ===== GAME SCREEN ===== -->
   <div id="game-screen" class="screen">
     <div id="top-bar">
+      <a href="index.html" class="back-link">← 首页</a>
       <span class="level-name" id="bar-level">任务一</span>
       <span class="score" id="bar-score">🔒 安全指数: 100</span>
       <button class="clue-btn" onclick="toggleNotebook()">📒 线索本</button>

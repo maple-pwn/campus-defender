@@ -387,6 +387,19 @@ html, body {
   align-items: center;
 }
 
+.back-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 13px;
+  margin-right: 16px;
+  letter-spacing: 1px;
+  transition: color 0.2s;
+}
+.back-link:hover {
+  color: var(--accent);
+  text-shadow: 0 0 6px var(--accent-glow);
+}
+
 .header-title {
   font-size: 18px;
   font-weight: bold;
