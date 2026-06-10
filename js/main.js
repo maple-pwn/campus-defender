@@ -465,6 +465,13 @@ const Game = {
   /** Handle the 'pwnme' command — jump to any level, no restrictions. */
   handlePwnmeCommand: function (args) {
     if (!args || args.length < 1) {
+      // Unlock all commands first
+      var allCmds2 = CommandRegistry.getAll();
+      for (var u2 = 0; u2 < allCmds2.length; u2++) {
+        GameState.unlockCommand(allCmds2[u2]);
+      }
+      Terminal.updateCommandBar(GameState._data.unlockedCommands);
+
       // No args: list ALL levels
       Terminal.printSystem('⚡ PWNME · 全关卡跳转 ⚡');
       Terminal.printInfo('');
@@ -495,7 +502,15 @@ const Game = {
       return;
     }
 
+    // Unlock all commands for pwnme freedom
+    var allCmds = CommandRegistry.getAll();
+    for (var u = 0; u < allCmds.length; u++) {
+      GameState.unlockCommand(allCmds[u]);
+    }
+    Terminal.updateCommandBar(GameState._data.unlockedCommands);
+
     Terminal.printSystem('⚡ 后门启动！跳转至 ' + levelId + ' — ' + level.title);
+    Terminal.printSystem('⚡ 已解锁全部命令，自由发挥吧！');
     Game.loadLevel(level.chapter, level.index);
   },
 
